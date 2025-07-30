@@ -38,14 +38,16 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
 - [x] ~~Configure SQLite database with migrations~~
 - [x] ~~Implement error handling and logging~~
 - [x] ~~Add hot reload development setup~~
-- [ ] **Design and implement Game model with hex ID and soft delete**
-- [ ] **Design and implement Score model with relationships and JSON extras**
-- [ ] **Create database migrations for games and scores tables**
-- [ ] **Add API key authentication middleware**
+- [x] ~~**Design and implement Game model with hex ID and soft delete**~~
+- [x] ~~**Design and implement Score model with relationships and JSON extras**~~
+- [x] ~~**Create database migrations for games and scores tables**~~
+- [x] ~~**Add API key authentication middleware**~~
 
 ### API Endpoints
-- [ ] **Implement CRUD endpoints for games (Create, Read, Update)**
-- [ ] **Implement CRUD endpoints for scores (Create, Read, Update)**
+- [x] ~~**Implement CRUD endpoints for games (Create, Read, Update)**~~
+- [x] ~~**Implement CRUD endpoints for scores (Create, Read, Update)**~~
+- [x] ~~**Restructure endpoints to use top-level /scores with query parameters**~~
+- [x] ~~**Add global leaderboard functionality (scores across all games)**~~
 - [ ] Add leaderboard ranking and filtering capabilities
 - [ ] Add batch operations for high-frequency score submissions
 
@@ -150,12 +152,14 @@ PUT    /games/{hex_id}     # Update leaderboard
 
 ### Score Submission & Leaderboards
 ```http
-POST   /games/{hex_id}/scores    # Submit a new score
-GET    /games/{hex_id}/scores    # Get leaderboard scores (paginated & sortable)
+POST   /scores                   # Submit a new score (game_hex_id in JSON body)
+GET    /scores                   # Get scores with optional game filtering (paginated & sortable)
+GET    /scores/{id}              # Get a specific score
 PUT    /scores/{id}              # Update a score
 ```
 
-**Query Parameters for `/games/{hex_id}/scores`:**
+**Query Parameters for `/scores`:**
+- `game_hex_id` - Filter scores for a specific game (optional - omit for global leaderboard)
 - `limit` - Number of scores per page (default: 25, max: 100)
 - `cursor` - Cursor for pagination (base64 encoded)
 - `sort_by` - Sort field: `score` (default), `date`, `user_name`
@@ -163,9 +167,26 @@ PUT    /scores/{id}              # Update a score
 
 **Examples:**
 ```http
-GET /games/abc123/scores?sort_by=score&order=desc&limit=10
-GET /games/abc123/scores?sort_by=date&order=asc&cursor=eyJpZCI6MTIzfQ
-GET /games/abc123/scores?sort_by=user_name&order=asc&limit=50
+# Get scores for a specific game
+GET /scores?game_hex_id=abc123&sort_by=score&order=desc&limit=10
+GET /scores?game_hex_id=abc123&sort_by=date&order=asc&cursor=eyJpZCI6MTIzfQ
+GET /scores?game_hex_id=abc123&sort_by=user_name&order=asc&limit=50
+
+# Get global leaderboard (all games)
+GET /scores?sort_by=score&order=desc&limit=25
+GET /scores?sort_by=date&order=asc
+```
+
+**Score Creation Request Body:**
+```json
+{
+  "game_hex_id": "abc123",
+  "score": "1000",
+  "score_val": 1000.5,
+  "user_name": "PlayerOne",
+  "user_id": "player123",
+  "extra": {"level": 5, "time": 120.5}
+}
 ```
 
 **Paginated Response Format:**
