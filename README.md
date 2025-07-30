@@ -34,7 +34,7 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
 ## TODO List
 
 ### Core Infrastructure
-- [ ] Create Docker configuration files (Dockerfile, docker-compose, .dockerignore)
+- [x] Create Docker configuration files (Dockerfile, docker-compose, .dockerignore)
 
 ### Testing & Quality
 - [ ] **Code Quality & Documentation Improvements**
@@ -45,7 +45,7 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
 - [ ] Set up CI/CD pipeline with automated quality checks
 
 ### Deployment
-- [ ] **Create multi-stage Dockerfile with security best practices**
+- [x] **Create multi-stage Dockerfile with security best practices**
 - [ ] Add Docker Compose for local development
 - [ ] Create deployment guides for major cloud providers
 - [ ] Add environment configuration documentation
@@ -59,7 +59,39 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
 
 ### Deploy LEADR
 
-*Coming soon - Docker deployment guide*
+#### Using Docker (Recommended)
+
+Pull the latest image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/[your-github-username]/leadr:latest
+
+# Run with required environment variables
+docker run -d \
+  -p 3000:3000 \
+  -v leadr_data:/app/data \
+  -e LEADR_API_KEY=your-secure-api-key \
+  -e DATABASE_URL=sqlite:/app/data/leadr.db \
+  ghcr.io/[your-github-username]/leadr:latest
+```
+
+#### Release Process
+
+This project uses automated semantic versioning based on commit messages:
+
+- **Breaking changes**: Commits starting with `BREAKING CHANGE:`, `breaking:`, or `major:` trigger a major version bump (1.0.0 → 2.0.0)
+- **New features**: Commits starting with `feat:` or `feature:` trigger a minor version bump (1.0.0 → 1.1.0)
+- **Bug fixes & other**: All other commits trigger a patch version bump (1.0.0 → 1.0.1)
+
+To create a new release:
+1. Go to Actions → Release and Publish
+2. Click "Run workflow"
+3. Select version bump type (or leave as "auto" for commit-based versioning)
+4. The workflow will:
+   - Determine the next version
+   - Create a GitHub release with changelog
+   - Build and push Docker images to GitHub Container Registry
+   - Update the version in Cargo.toml
 
 ### Development
 
