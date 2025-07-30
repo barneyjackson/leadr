@@ -6,6 +6,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_env_filter(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()))
         .init();
 
+    // Validate required environment variables on startup
+    std::env::var("LEADR_API_KEY").unwrap_or_else(|_| {
+        eprintln!("ERROR: LEADR_API_KEY environment variable is required but not set");
+        eprintln!("Please set it before starting the server:");
+        eprintln!("  export LEADR_API_KEY=\"your-secret-api-key\"");
+        eprintln!("  cargo run");
+        std::process::exit(1);
+    });
+
     let database_url =
         std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:./leadr.db".to_string());
 
