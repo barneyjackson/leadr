@@ -13,7 +13,7 @@ pub struct ApiKeyAuth {
 }
 
 impl ApiKeyAuth {
-    /// Creates a new ApiKeyAuth instance with the provided API key.
+    /// Creates a new `ApiKeyAuth` instance with the provided API key.
     #[must_use]
     pub fn new(api_key: String) -> Self {
         Self { api_key }
@@ -54,7 +54,7 @@ impl ApiKeyAuth {
 /// Middleware for API key authentication.
 ///
 /// # Errors
-/// Returns `StatusCode::INTERNAL_SERVER_ERROR` if the LEADR_API_KEY environment variable is not set.
+/// Returns `StatusCode::INTERNAL_SERVER_ERROR` if the `LEADR_API_KEY` environment variable is not set.
 /// Returns `StatusCode::UNAUTHORIZED` if no API key is provided or if the key is invalid.
 ///
 /// # Panics

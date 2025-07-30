@@ -76,7 +76,10 @@ impl Game {
         }
     }
 
-    #[must_use]
+    /// Validates that a hex ID has the correct format (6 lowercase hex characters).
+    /// 
+    /// # Errors
+    /// Returns an error string if the hex ID is not exactly 6 characters or contains invalid characters.
     pub fn validate_hex_id(hex_id: &str) -> Result<(), String> {
         if hex_id.len() != 6 {
             return Err("Hex ID must be exactly 6 characters".to_string());
@@ -92,7 +95,10 @@ impl Game {
         Ok(())
     }
 
-    #[must_use]
+    /// Validates that a game name meets the requirements.
+    /// 
+    /// # Errors
+    /// Returns an error string if the name is empty or exceeds 255 characters.
     pub fn validate_name(name: &str) -> Result<(), String> {
         if name.trim().is_empty() {
             return Err("Game name cannot be empty".to_string());

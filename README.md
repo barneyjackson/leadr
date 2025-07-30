@@ -59,10 +59,15 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
   - [x] ~~Modernize string formatting to use inline variable syntax (`format!("text: {var}")`)~~
   - [x] ~~Fix lossless type casting to use `From::from()` instead of `as` for type safety~~
   - [x] ~~Resolve code organization issues (import ordering, item placement, raw string usage)~~
-  - [ ] Add proper backticks around code terms in documentation for better readability
+  - [x] ~~**Add missing `# Errors` documentation to 20+ handler functions (TOP PRIORITY - 20 warnings)**~~
+  - [x] ~~**Add proper backticks around code terms in documentation (13 warnings)**~~
+  - [x] ~~**Add `#[must_use]` attributes to utility methods (12 warnings)**~~
+  - [x] ~~**Complete string formatting modernization (9 remaining instances)**~~
+  - [x] ~~Fix double `#[must_use]` attributes on Result-returning functions (4 warnings)~~
   - [ ] Merge duplicate error handling match arms to reduce code duplication
-  - [ ] Apply consistent code formatting across the entire codebase
-  - [ ] Implement performance optimizations for clone operations and string handling
+  - [ ] Add missing `# Panics` documentation for functions that may panic
+  - [x] ~~Replace manual clamp logic with `.clamp()` method~~
+  - [ ] Optimize string building in hex ID generation
 - [ ] Add performance benchmarks
 - [ ] Set up CI/CD pipeline with automated quality checks
 

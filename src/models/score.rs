@@ -123,7 +123,10 @@ impl Score {
         }
     }
 
-    #[must_use]
+    /// Validates that a user name meets the requirements.
+    /// 
+    /// # Errors
+    /// Returns an error string if the name is empty or exceeds 100 characters.
     pub fn validate_user_name(name: &str) -> Result<(), String> {
         if name.trim().is_empty() {
             return Err("User name cannot be empty".to_string());
@@ -134,7 +137,10 @@ impl Score {
         Ok(())
     }
 
-    #[must_use]
+    /// Validates that a user ID meets the requirements.
+    /// 
+    /// # Errors
+    /// Returns an error string if the ID is empty or exceeds 255 characters.
     pub fn validate_user_id(id: &str) -> Result<(), String> {
         if id.trim().is_empty() {
             return Err("User ID cannot be empty".to_string());

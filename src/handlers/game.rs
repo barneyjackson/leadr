@@ -12,6 +12,11 @@ use crate::{
     utils::pagination::PaginationParams,
 };
 
+/// Creates a new game.
+/// 
+/// # Errors
+/// Returns `ApiError::ValidationError` if the game name is invalid.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn create_game(
     State(pool): State<DbPool>,
     Json(create_data): Json<CreateGame>,
@@ -20,6 +25,11 @@ pub async fn create_game(
     Ok((StatusCode::CREATED, Json(game)))
 }
 
+/// Lists games with pagination support.
+/// 
+/// # Errors
+/// Returns `ApiError::ValidationError` if pagination parameters are invalid.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn list_games(
     State(pool): State<DbPool>,
     Query(params): Query<PaginationParams>,
@@ -28,6 +38,12 @@ pub async fn list_games(
     Ok(Json(result))
 }
 
+/// Retrieves a specific game by its hex ID.
+/// 
+/// # Errors
+/// Returns `ApiError::InvalidParameter` if the hex_id format is invalid.
+/// Returns `ApiError::NotFound` if no game exists with the given hex_id.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn get_game(
     State(pool): State<DbPool>,
     Path(hex_id): Path<String>,
@@ -36,6 +52,13 @@ pub async fn get_game(
     Ok(Json(game))
 }
 
+/// Updates an existing game.
+/// 
+/// # Errors
+/// Returns `ApiError::InvalidParameter` if the hex_id format or name is invalid.
+/// Returns `ApiError::NotFound` if no game exists with the given hex_id.
+/// Returns `ApiError::ValidationError` if the update data is invalid.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn update_game(
     State(pool): State<DbPool>,
     Path(hex_id): Path<String>,
@@ -45,6 +68,12 @@ pub async fn update_game(
     Ok(Json(game))
 }
 
+/// Soft deletes a game (marks as deleted without removing from database).
+/// 
+/// # Errors
+/// Returns `ApiError::InvalidParameter` if the hex_id format is invalid.
+/// Returns `ApiError::NotFound` if no game exists with the given hex_id.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn delete_game(
     State(pool): State<DbPool>,
     Path(hex_id): Path<String>,

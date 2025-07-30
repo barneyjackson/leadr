@@ -62,11 +62,11 @@ impl GameRepository {
         Ok(game)
     }
 
-    /// Get a game by hex_id
+    /// Get a game by `hex_id`
     ///
     /// # Errors
-    /// Returns `ApiError::InvalidParameter` if the hex_id is invalid.
-    /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
+    /// Returns `ApiError::InvalidParameter` if the `hex_id` is invalid.
+    /// Returns `ApiError::NotFound` if no game exists with the given `hex_id`.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     ///
     /// # Panics
@@ -230,8 +230,8 @@ impl GameRepository {
     /// Update a game
     ///
     /// # Errors
-    /// Returns `ApiError::InvalidParameter` if the hex_id or name is invalid.
-    /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
+    /// Returns `ApiError::InvalidParameter` if the `hex_id` or name is invalid.
+    /// Returns `ApiError::NotFound` if no game exists with the given `hex_id`.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     ///
     /// # Panics
@@ -281,8 +281,8 @@ impl GameRepository {
     /// Soft delete a game (this will cascade to scores via trigger)
     ///
     /// # Errors
-    /// Returns `ApiError::InvalidParameter` if the hex_id is invalid.
-    /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
+    /// Returns `ApiError::InvalidParameter` if the `hex_id` is invalid.
+    /// Returns `ApiError::NotFound` if no game exists with the given `hex_id`.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     ///
     /// # Panics
@@ -311,8 +311,8 @@ impl GameRepository {
     /// Restore a soft-deleted game (this will cascade to scores via trigger)
     ///
     /// # Errors
-    /// Returns `ApiError::InvalidParameter` if the hex_id is invalid.
-    /// Returns `ApiError::NotFound` if no game exists with the given hex_id or it's not deleted.
+    /// Returns `ApiError::InvalidParameter` if the `hex_id` is invalid.
+    /// Returns `ApiError::NotFound` if no game exists with the given `hex_id` or it's not deleted.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     ///
     /// # Panics
@@ -359,7 +359,7 @@ impl ScoreRepository {
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     ///
     /// # Panics
-    /// Panics if serde_json::to_string fails on valid JSON data, which should never happen.
+    /// Panics if `serde_json::to_string` fails on valid JSON data, which should never happen.
     pub async fn create(pool: &SqlitePool, create_data: CreateScore) -> Result<Score> {
         // Validate inputs
         Score::validate_user_name(&create_data.user_name)?;
@@ -456,7 +456,7 @@ impl ScoreRepository {
     /// List scores for a game with pagination and sorting
     ///
     /// # Errors
-    /// Returns `ApiError::ValidationError` if the game hex_id or cursor is invalid.
+    /// Returns `ApiError::ValidationError` if the game `hex_id` or cursor is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     ///
     /// # Panics

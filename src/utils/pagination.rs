@@ -46,10 +46,12 @@ pub struct ScoreSortParams {
 }
 
 impl PaginationParams {
+    #[must_use]
     pub fn new(cursor: Option<String>, limit: Option<u32>) -> Self {
         Self { cursor, limit }
     }
 
+    #[must_use]
     pub fn get_limit(&self) -> u32 {
         match self.limit {
             Some(limit) if limit > 0 && limit <= MAX_PAGE_SIZE => limit,
@@ -58,17 +60,17 @@ impl PaginationParams {
         }
     }
 
+    #[must_use]
     pub fn get_page_size_from_env() -> u32 {
         std::env::var("LEADR_PAGE_SIZE")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or(DEFAULT_PAGE_SIZE)
-            .min(MAX_PAGE_SIZE)
-            .max(1)
+            .unwrap_or(DEFAULT_PAGE_SIZE).clamp(1, MAX_PAGE_SIZE)
     }
 }
 
 impl<T> PaginatedResponse<T> {
+    #[must_use]
     pub fn new(
         data: Vec<T>,
         has_more: bool,
@@ -111,6 +113,7 @@ impl<T> PaginatedResponse<T> {
     }
 
     /// Get pagination metadata for client use
+    #[must_use]
     pub fn get_pagination_info(&self) -> PaginationInfo {
         PaginationInfo {
             has_more: self.has_more,
@@ -132,18 +135,22 @@ pub struct PaginationInfo {
 }
 
 impl ScoreSortParams {
+    #[must_use]
     pub fn new(sort_by: Option<ScoreSortField>, order: Option<SortOrder>) -> Self {
         Self { sort_by, order }
     }
 
+    #[must_use]
     pub fn get_sort_field(&self) -> ScoreSortField {
         self.sort_by.clone().unwrap_or_default()
     }
 
+    #[must_use]
     pub fn get_sort_order(&self) -> SortOrder {
         self.order.clone().unwrap_or_default()
     }
 
+    #[must_use]
     pub fn to_sql_order_clause(&self) -> String {
         let field = match self.get_sort_field() {
             ScoreSortField::Score => "score_val",
@@ -156,9 +163,10 @@ impl ScoreSortParams {
             SortOrder::Descending => "DESC",
         };
 
-        format!("{} {}", field, order)
+        format!("{field} {order}")
     }
 
+    #[must_use]
     pub fn get_cursor_field(&self) -> &'static str {
         match self.get_sort_field() {
             ScoreSortField::Score => "score_val",
@@ -187,32 +195,32 @@ pub mod cursor {
 
     pub fn encode_game_cursor(cursor: &GameCursor) -> Result<String, String> {
         let json = serde_json::to_string(cursor)
-            .map_err(|e| format!("Failed to serialize cursor: {}", e))?;
+            .map_err(|e| format!("Failed to serialize cursor: {e}"))?;
         Ok(URL_SAFE_NO_PAD.encode(json.as_bytes()))
     }
 
     pub fn decode_game_cursor(cursor: &str) -> Result<GameCursor, String> {
         let bytes = URL_SAFE_NO_PAD
             .decode(cursor)
-            .map_err(|e| format!("Failed to decode cursor: {}", e))?;
+            .map_err(|e| format!("Failed to decode cursor: {e}"))?;
         let json =
-            String::from_utf8(bytes).map_err(|e| format!("Invalid UTF-8 in cursor: {}", e))?;
-        serde_json::from_str(&json).map_err(|e| format!("Failed to deserialize cursor: {}", e))
+            String::from_utf8(bytes).map_err(|e| format!("Invalid UTF-8 in cursor: {e}"))?;
+        serde_json::from_str(&json).map_err(|e| format!("Failed to deserialize cursor: {e}"))
     }
 
     pub fn encode_score_cursor(cursor: &ScoreCursor) -> Result<String, String> {
         let json = serde_json::to_string(cursor)
-            .map_err(|e| format!("Failed to serialize cursor: {}", e))?;
+            .map_err(|e| format!("Failed to serialize cursor: {e}"))?;
         Ok(URL_SAFE_NO_PAD.encode(json.as_bytes()))
     }
 
     pub fn decode_score_cursor(cursor: &str) -> Result<ScoreCursor, String> {
         let bytes = URL_SAFE_NO_PAD
             .decode(cursor)
-            .map_err(|e| format!("Failed to decode cursor: {}", e))?;
+            .map_err(|e| format!("Failed to decode cursor: {e}"))?;
         let json =
-            String::from_utf8(bytes).map_err(|e| format!("Invalid UTF-8 in cursor: {}", e))?;
-        serde_json::from_str(&json).map_err(|e| format!("Failed to deserialize cursor: {}", e))
+            String::from_utf8(bytes).map_err(|e| format!("Invalid UTF-8 in cursor: {e}"))?;
+        serde_json::from_str(&json).map_err(|e| format!("Failed to deserialize cursor: {e}"))
     }
 
     // Helper functions to create cursors from model data

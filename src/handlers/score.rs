@@ -15,6 +15,12 @@ use crate::{
     utils::pagination::{PaginationParams, ScoreSortParams},
 };
 
+/// Creates a new score for a specific game.
+/// 
+/// # Errors
+/// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
+/// Returns `ApiError::NotFound` if the game does not exist.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn create_score(
     State(pool): State<DbPool>,
     Path(game_hex_id): Path<String>,
@@ -39,6 +45,12 @@ pub async fn create_score(
     Ok((StatusCode::CREATED, Json(score)))
 }
 
+/// Lists scores for a specific game with pagination and sorting support.
+/// 
+/// # Errors
+/// Returns `ApiError::ValidationError` if pagination or sort parameters are invalid.
+/// Returns `ApiError::InvalidParameter` if the game hex_id format is invalid.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn list_scores(
     State(pool): State<DbPool>,
     Path(game_hex_id): Path<String>,
@@ -60,6 +72,11 @@ pub async fn list_scores(
     Ok(Json(result))
 }
 
+/// Retrieves a specific score by its ID.
+/// 
+/// # Errors
+/// Returns `ApiError::NotFound` if no score exists with the given ID.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn get_score(
     State(pool): State<DbPool>,
     Path(id): Path<i64>,
@@ -68,6 +85,12 @@ pub async fn get_score(
     Ok(Json(score))
 }
 
+/// Updates an existing score.
+/// 
+/// # Errors
+/// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
+/// Returns `ApiError::NotFound` if no score exists with the given ID.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn update_score(
     State(pool): State<DbPool>,
     Path(id): Path<i64>,
@@ -77,6 +100,11 @@ pub async fn update_score(
     Ok(Json(score))
 }
 
+/// Soft deletes a score (marks as deleted without removing from database).
+/// 
+/// # Errors
+/// Returns `ApiError::NotFound` if no score exists with the given ID.
+/// Returns `ApiError::DatabaseError` if the database operation fails.
 pub async fn delete_score(
     State(pool): State<DbPool>,
     Path(id): Path<i64>,
