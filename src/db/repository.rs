@@ -18,11 +18,11 @@ pub struct ScoreRepository;
 
 impl GameRepository {
     /// Create a new game
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::ValidationError` if the game name is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Does not panic under normal operation.
     pub async fn create(pool: &SqlitePool, create_data: CreateGame) -> Result<Game> {
@@ -63,12 +63,12 @@ impl GameRepository {
     }
 
     /// Get a game by hex_id
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::InvalidParameter` if the hex_id is invalid.
     /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
     pub async fn get_by_hex_id(pool: &SqlitePool, hex_id: &str) -> Result<Game> {
@@ -101,11 +101,11 @@ impl GameRepository {
     }
 
     /// Get a game by numeric id
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::NotFound` if no game exists with the given id.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Does not panic under normal operation.
     pub async fn get_by_id(pool: &SqlitePool, id: i64) -> Result<Game> {
@@ -136,11 +136,11 @@ impl GameRepository {
     }
 
     /// List games with pagination
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::ValidationError` if the cursor is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
     pub async fn list(
@@ -228,12 +228,12 @@ impl GameRepository {
     }
 
     /// Update a game
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::InvalidParameter` if the hex_id or name is invalid.
     /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
     pub async fn update(pool: &SqlitePool, hex_id: &str, update_data: UpdateGame) -> Result<Game> {
@@ -279,12 +279,12 @@ impl GameRepository {
     }
 
     /// Soft delete a game (this will cascade to scores via trigger)
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::InvalidParameter` if the hex_id is invalid.
     /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Does not panic under normal operation.
     pub async fn soft_delete(pool: &SqlitePool, hex_id: &str) -> Result<()> {
@@ -309,12 +309,12 @@ impl GameRepository {
     }
 
     /// Restore a soft-deleted game (this will cascade to scores via trigger)
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::InvalidParameter` if the hex_id is invalid.
     /// Returns `ApiError::NotFound` if no game exists with the given hex_id or it's not deleted.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
     pub async fn restore(pool: &SqlitePool, hex_id: &str) -> Result<Game> {
@@ -353,11 +353,11 @@ impl GameRepository {
 
 impl ScoreRepository {
     /// Create a new score
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Panics if serde_json::to_string fails on valid JSON data, which should never happen.
     pub async fn create(pool: &SqlitePool, create_data: CreateScore) -> Result<Score> {
@@ -417,11 +417,11 @@ impl ScoreRepository {
     }
 
     /// Get a score by id
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::NotFound` if no score exists with the given id.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Does not panic under normal operation.
     pub async fn get_by_id(pool: &SqlitePool, id: i64) -> Result<Score> {
@@ -454,11 +454,11 @@ impl ScoreRepository {
     }
 
     /// List scores for a game with pagination and sorting
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::ValidationError` if the game hex_id or cursor is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Does not panic under normal operation.
     pub async fn list_by_game(
@@ -567,12 +567,12 @@ impl ScoreRepository {
     }
 
     /// Update a score
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
     /// Returns `ApiError::NotFound` if no score exists with the given id.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
     pub async fn update(pool: &SqlitePool, id: i64, update_data: UpdateScore) -> Result<Score> {
@@ -642,11 +642,11 @@ impl ScoreRepository {
     }
 
     /// Soft delete a score
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::NotFound` if no score exists with the given id.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Does not panic under normal operation.
     pub async fn soft_delete(pool: &SqlitePool, id: i64) -> Result<()> {
@@ -669,11 +669,11 @@ impl ScoreRepository {
     }
 
     /// Restore a soft-deleted score
-    /// 
+    ///
     /// # Errors
     /// Returns `ApiError::NotFound` if no score exists with the given id or it's not deleted.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
-    /// 
+    ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
     pub async fn restore(pool: &SqlitePool, id: i64) -> Result<Score> {

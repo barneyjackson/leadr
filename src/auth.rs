@@ -20,7 +20,7 @@ impl ApiKeyAuth {
     }
 
     /// Validates the provided key against the stored API key using constant-time comparison.
-    /// 
+    ///
     /// # Errors
     /// Returns `false` if either key is empty or if the keys don't match.
     #[must_use]
@@ -39,7 +39,7 @@ impl ApiKeyAuth {
     }
 
     /// Extracts the API key from HTTP headers.
-    /// 
+    ///
     /// # Errors
     /// Returns `None` if the header is missing or contains invalid UTF-8.
     #[must_use]
@@ -52,11 +52,11 @@ impl ApiKeyAuth {
 }
 
 /// Middleware for API key authentication.
-/// 
+///
 /// # Errors
 /// Returns `StatusCode::INTERNAL_SERVER_ERROR` if the LEADR_API_KEY environment variable is not set.
 /// Returns `StatusCode::UNAUTHORIZED` if no API key is provided or if the key is invalid.
-/// 
+///
 /// # Panics
 /// Does not panic under normal operation.
 pub async fn api_key_middleware(

@@ -19,34 +19,24 @@ pub struct PaginatedResponse<T> {
     pub page_size: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum SortOrder {
     #[serde(rename = "asc")]
     Ascending,
     #[serde(rename = "desc")]
+    #[default]
     Descending,
 }
 
-impl Default for SortOrder {
-    fn default() -> Self {
-        SortOrder::Descending
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum ScoreSortField {
     #[serde(rename = "score")]
+    #[default]
     Score,
     #[serde(rename = "date")]
     Date,
     #[serde(rename = "user_name")]
     UserName,
-}
-
-impl Default for ScoreSortField {
-    fn default() -> Self {
-        ScoreSortField::Score
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

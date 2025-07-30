@@ -1,5 +1,4 @@
 use leadr_api::{create_app, db};
-use tracing_subscriber;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

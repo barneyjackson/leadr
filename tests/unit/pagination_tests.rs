@@ -84,7 +84,7 @@ fn test_paginated_response_creation() {
     );
 
     assert_eq!(response.data, data);
-    assert_eq!(response.has_more, true);
+    assert!(response.has_more);
     assert_eq!(response.next_cursor, Some("cursor123".to_string()));
     assert_eq!(response.current_cursor, Some("current123".to_string()));
     assert_eq!(response.total_returned, 3);
@@ -100,7 +100,7 @@ fn test_from_query_results_with_more_data() {
         });
 
     assert_eq!(response.data, vec![1, 2, 3]); // Should remove extra item
-    assert_eq!(response.has_more, true);
+    assert!(response.has_more);
     assert_eq!(response.next_cursor, Some("cursor_3".to_string()));
     assert_eq!(response.current_cursor, Some("current".to_string()));
     assert_eq!(response.total_returned, 3);
@@ -115,7 +115,7 @@ fn test_from_query_results_no_more_data() {
     });
 
     assert_eq!(response.data, vec![1, 2]);
-    assert_eq!(response.has_more, false);
+    assert!(!response.has_more);
     assert_eq!(response.next_cursor, None);
     assert_eq!(response.current_cursor, None);
     assert_eq!(response.total_returned, 2);
@@ -133,7 +133,7 @@ fn test_get_pagination_info() {
     );
 
     let info = response.get_pagination_info();
-    assert_eq!(info.has_more, true);
+    assert!(info.has_more);
     assert_eq!(info.next_cursor, Some("next".to_string()));
     assert_eq!(info.current_cursor, Some("current".to_string()));
     assert_eq!(info.total_returned, 3);
