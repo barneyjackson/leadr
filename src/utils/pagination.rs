@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
+use utoipa::{ToSchema, IntoParams};
 
 pub const DEFAULT_PAGE_SIZE: u32 = 25;
 pub const MAX_PAGE_SIZE: u32 = 100;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, IntoParams)]
 pub struct PaginationParams {
     pub cursor: Option<String>,
     pub limit: Option<u32>,
@@ -19,7 +20,7 @@ pub struct PaginatedResponse<T> {
     pub page_size: u32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, ToSchema)]
 pub enum SortOrder {
     #[serde(rename = "asc")]
     Ascending,
@@ -28,7 +29,7 @@ pub enum SortOrder {
     Descending,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, ToSchema)]
 pub enum ScoreSortField {
     #[serde(rename = "score")]
     #[default]
@@ -45,7 +46,7 @@ pub struct ScoreSortParams {
     pub order: Option<SortOrder>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, IntoParams)]
 pub struct ScoreQueryParams {
     pub game_hex_id: Option<String>,
     pub cursor: Option<String>,

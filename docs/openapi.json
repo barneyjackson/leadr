@@ -1,0 +1,918 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LEADR API",
+    "description": "A blazingly fast, single-tenant leaderboard API built for indie game developers",
+    "contact": {
+      "name": "LEADR Support",
+      "url": "https://github.com/barneyjackson/leadr"
+    },
+    "license": {
+      "name": ""
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/export": {
+      "get": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Exports all game and score data as a CSV file for backup purposes.",
+        "description": "Returns denormalized data with one row per score, including all game information.\n\n# Errors\nReturns `ApiError::Database` if the database query fails.\nReturns `ApiError::ValidationError` if CSV serialization fails.",
+        "operationId": "export_data",
+        "responses": {
+          "200": {
+            "description": "CSV file with all data"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/games": {
+      "get": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "Lists games with pagination support.",
+        "description": "# Errors\nReturns `ApiError::ValidationError` if pagination parameters are invalid.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "list_games",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination parameters"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "Creates a new game.",
+        "description": "# Errors\nReturns `ApiError::ValidationError` if the game name is invalid.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "create_game",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGame"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Game created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid game data"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/games/{hex_id}": {
+      "get": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "Retrieves a specific game by its hex ID.",
+        "description": "# Errors\nReturns `ApiError::InvalidParameter` if the hex_id format is invalid.\nReturns `ApiError::NotFound` if no game exists with the given hex_id.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "get_game",
+        "parameters": [
+          {
+            "name": "hex_id",
+            "in": "path",
+            "description": "6-character game identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid hex_id format"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "404": {
+            "description": "Game not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "Updates an existing game.",
+        "description": "# Errors\nReturns `ApiError::InvalidParameter` if the hex_id format or name is invalid.\nReturns `ApiError::NotFound` if no game exists with the given hex_id.\nReturns `ApiError::ValidationError` if the update data is invalid.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "update_game",
+        "parameters": [
+          {
+            "name": "hex_id",
+            "in": "path",
+            "description": "6-character game identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGame"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Game updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "404": {
+            "description": "Game not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "Soft deletes a game (marks as deleted without removing from database).",
+        "description": "# Errors\nReturns `ApiError::InvalidParameter` if the hex_id format is invalid.\nReturns `ApiError::NotFound` if no game exists with the given hex_id.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "delete_game",
+        "parameters": [
+          {
+            "name": "hex_id",
+            "in": "path",
+            "description": "6-character game identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Game deleted successfully"
+          },
+          "400": {
+            "description": "Invalid hex_id format"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "404": {
+            "description": "Game not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health check endpoint that verifies both application and database status.",
+        "description": "# Errors\nReturns 503 Service Unavailable if the database connection fails.",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          },
+          "503": {
+            "description": "Service is unhealthy"
+          }
+        }
+      }
+    },
+    "/scores": {
+      "get": {
+        "tags": [
+          "Scores"
+        ],
+        "summary": "Lists scores with optional game filtering, pagination and sorting support.",
+        "description": "# Errors\nReturns `ApiError::ValidationError` if pagination or sort parameters are invalid.\nReturns `ApiError::InvalidParameter` if the game hex_id format is invalid.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "list_scores",
+        "parameters": [
+          {
+            "name": "game_hex_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
+          },
+          {
+            "name": "limit",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ScoreSortField"
+                }
+              ],
+              "nullable": true
+            }
+          },
+          {
+            "name": "order",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/SortOrder"
+                }
+              ],
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of scores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Scores"
+        ],
+        "summary": "Creates a new score for a specific game.",
+        "description": "# Errors\nReturns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.\nReturns `ApiError::NotFound` if the game does not exist.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "create_score",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScore"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Score created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Score"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid score data"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "404": {
+            "description": "Game not found"
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/scores/{id}": {
+      "get": {
+        "tags": [
+          "Scores"
+        ],
+        "summary": "Retrieves a specific score by its ID.",
+        "description": "# Errors\nReturns `ApiError::NotFound` if no score exists with the given ID.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "get_score",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Score ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Score found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Score"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "404": {
+            "description": "Score not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Scores"
+        ],
+        "summary": "Updates an existing score.",
+        "description": "# Errors\nReturns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.\nReturns `ApiError::NotFound` if no score exists with the given ID.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "update_score",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Score ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScore"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Score updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Score"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "404": {
+            "description": "Score not found"
+          },
+          "422": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Scores"
+        ],
+        "summary": "Soft deletes a score (marks as deleted without removing from database).",
+        "description": "# Errors\nReturns `ApiError::NotFound` if no score exists with the given ID.\nReturns `ApiError::DatabaseError` if the database operation fails.",
+        "operationId": "delete_score",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Score ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Score deleted successfully"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "404": {
+            "description": "Score not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateGame": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateScore": {
+        "type": "object",
+        "required": [
+          "game_hex_id",
+          "score",
+          "user_name",
+          "user_id"
+        ],
+        "properties": {
+          "extra": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              }
+            ],
+            "nullable": true
+          },
+          "game_hex_id": {
+            "type": "string"
+          },
+          "score": {
+            "type": "string"
+          },
+          "score_val": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "user_name": {
+            "type": "string"
+          }
+        }
+      },
+      "Game": {
+        "type": "object",
+        "required": [
+          "id",
+          "hex_id",
+          "name",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deleted_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "hex_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "has_more",
+          "total_returned",
+          "page_size"
+        ],
+        "properties": {
+          "current_cursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/T"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_returned": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "PaginationParams": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
+          }
+        }
+      },
+      "Score": {
+        "type": "object",
+        "required": [
+          "id",
+          "game_hex_id",
+          "score",
+          "score_val",
+          "user_name",
+          "user_id",
+          "submitted_at"
+        ],
+        "properties": {
+          "deleted_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "extra": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              }
+            ],
+            "nullable": true
+          },
+          "game_hex_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "score": {
+            "type": "string"
+          },
+          "score_val": {
+            "type": "number",
+            "format": "double"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "user_name": {
+            "type": "string"
+          }
+        }
+      },
+      "ScoreQueryParams": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "game_hex_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0
+          },
+          "order": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SortOrder"
+              }
+            ],
+            "nullable": true
+          },
+          "sort_by": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScoreSortField"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "ScoreSortField": {
+        "type": "string",
+        "enum": [
+          "score",
+          "date",
+          "user_name"
+        ]
+      },
+      "SortOrder": {
+        "type": "string",
+        "enum": [
+          "asc",
+          "desc"
+        ]
+      },
+      "UpdateGame": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateScore": {
+        "type": "object",
+        "properties": {
+          "extra": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              }
+            ],
+            "nullable": true
+          },
+          "score": {
+            "type": "string",
+            "nullable": true
+          },
+          "score_val": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "user_name": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "api_key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "leadr-api-key"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Health check endpoint"
+    },
+    {
+      "name": "Games",
+      "description": "Game/Leaderboard management"
+    },
+    {
+      "name": "Scores",
+      "description": "Score management"
+    },
+    {
+      "name": "Export",
+      "description": "Data export operations"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ use crate::{
         DbPool,
     },
     error::ApiError,
-    models::score::{CreateScore, Score, UpdateScore},
+    models::{score::{CreateScore, Score, UpdateScore}, PaginatedResponse},
     utils::pagination::ScoreQueryParams,
 };
 
@@ -21,6 +21,23 @@ use crate::{
 /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
 /// Returns `ApiError::NotFound` if the game does not exist.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    post,
+    path = "/scores",
+    request_body = CreateScore,
+    responses(
+        (status = 201, description = "Score created successfully", body = Score),
+        (status = 400, description = "Invalid score data"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 404, description = "Game not found"),
+        (status = 422, description = "Validation error"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Scores"
+)]
 pub async fn create_score(
     State(pool): State<DbPool>,
     Json(create_data): Json<CreateScore>,
@@ -47,6 +64,23 @@ pub async fn create_score(
 /// Returns `ApiError::ValidationError` if pagination or sort parameters are invalid.
 /// Returns `ApiError::InvalidParameter` if the game hex_id format is invalid.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    get,
+    path = "/scores",
+    params(
+        ScoreQueryParams
+    ),
+    responses(
+        (status = 200, description = "List of scores", body = PaginatedResponse<Score>),
+        (status = 400, description = "Invalid query parameters"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Scores"
+)]
 pub async fn list_scores(
     State(pool): State<DbPool>,
     RawQuery(query_string): RawQuery,
@@ -72,6 +106,23 @@ pub async fn list_scores(
 /// # Errors
 /// Returns `ApiError::NotFound` if no score exists with the given ID.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    get,
+    path = "/scores/{id}",
+    params(
+        ("id" = i64, Path, description = "Score ID")
+    ),
+    responses(
+        (status = 200, description = "Score found", body = Score),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 404, description = "Score not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Scores"
+)]
 pub async fn get_score(
     State(pool): State<DbPool>,
     Path(id): Path<i64>,
@@ -86,6 +137,26 @@ pub async fn get_score(
 /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
 /// Returns `ApiError::NotFound` if no score exists with the given ID.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    put,
+    path = "/scores/{id}",
+    params(
+        ("id" = i64, Path, description = "Score ID")
+    ),
+    request_body = UpdateScore,
+    responses(
+        (status = 200, description = "Score updated successfully", body = Score),
+        (status = 400, description = "Invalid data"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 404, description = "Score not found"),
+        (status = 422, description = "Validation error"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Scores"
+)]
 pub async fn update_score(
     State(pool): State<DbPool>,
     Path(id): Path<i64>,
@@ -100,6 +171,23 @@ pub async fn update_score(
 /// # Errors
 /// Returns `ApiError::NotFound` if no score exists with the given ID.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    delete,
+    path = "/scores/{id}",
+    params(
+        ("id" = i64, Path, description = "Score ID")
+    ),
+    responses(
+        (status = 204, description = "Score deleted successfully"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 404, description = "Score not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Scores"
+)]
 pub async fn delete_score(
     State(pool): State<DbPool>,
     Path(id): Path<i64>,

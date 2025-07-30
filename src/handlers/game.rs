@@ -4,11 +4,12 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use utoipa::OpenApi;
 
 use crate::{
     db::{repository::GameRepository, DbPool},
     error::ApiError,
-    models::game::{CreateGame, UpdateGame},
+    models::{game::{CreateGame, UpdateGame, Game}, PaginatedResponse},
     utils::pagination::PaginationParams,
 };
 
@@ -17,6 +18,21 @@ use crate::{
 /// # Errors
 /// Returns `ApiError::ValidationError` if the game name is invalid.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    post,
+    path = "/games",
+    request_body = CreateGame,
+    responses(
+        (status = 201, description = "Game created successfully", body = Game),
+        (status = 400, description = "Invalid game data"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Games"
+)]
 pub async fn create_game(
     State(pool): State<DbPool>,
     Json(create_data): Json<CreateGame>,
@@ -30,6 +46,23 @@ pub async fn create_game(
 /// # Errors
 /// Returns `ApiError::ValidationError` if pagination parameters are invalid.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    get,
+    path = "/games",
+    params(
+        PaginationParams
+    ),
+    responses(
+        (status = 200, description = "List of games", body = PaginatedResponse<Game>),
+        (status = 400, description = "Invalid pagination parameters"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Games"
+)]
 pub async fn list_games(
     State(pool): State<DbPool>,
     Query(params): Query<PaginationParams>,
@@ -44,6 +77,24 @@ pub async fn list_games(
 /// Returns `ApiError::InvalidParameter` if the hex_id format is invalid.
 /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    get,
+    path = "/games/{hex_id}",
+    params(
+        ("hex_id" = String, Path, description = "6-character game identifier")
+    ),
+    responses(
+        (status = 200, description = "Game found", body = Game),
+        (status = 400, description = "Invalid hex_id format"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 404, description = "Game not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Games"
+)]
 pub async fn get_game(
     State(pool): State<DbPool>,
     Path(hex_id): Path<String>,
@@ -59,6 +110,25 @@ pub async fn get_game(
 /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
 /// Returns `ApiError::ValidationError` if the update data is invalid.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    put,
+    path = "/games/{hex_id}",
+    params(
+        ("hex_id" = String, Path, description = "6-character game identifier")
+    ),
+    request_body = UpdateGame,
+    responses(
+        (status = 200, description = "Game updated successfully", body = Game),
+        (status = 400, description = "Invalid data"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 404, description = "Game not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Games"
+)]
 pub async fn update_game(
     State(pool): State<DbPool>,
     Path(hex_id): Path<String>,
@@ -74,6 +144,24 @@ pub async fn update_game(
 /// Returns `ApiError::InvalidParameter` if the hex_id format is invalid.
 /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
+#[utoipa::path(
+    delete,
+    path = "/games/{hex_id}",
+    params(
+        ("hex_id" = String, Path, description = "6-character game identifier")
+    ),
+    responses(
+        (status = 204, description = "Game deleted successfully"),
+        (status = 400, description = "Invalid hex_id format"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 404, description = "Game not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Games"
+)]
 pub async fn delete_game(
     State(pool): State<DbPool>,
     Path(hex_id): Path<String>,

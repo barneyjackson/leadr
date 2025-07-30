@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct Score {
     pub id: i64,
     pub game_hex_id: String,
@@ -47,7 +48,7 @@ impl From<ScoreRow> for Score {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct CreateScore {
     pub game_hex_id: String,
     pub score: String,          // Changed to String
@@ -57,7 +58,7 @@ pub struct CreateScore {
     pub extra: Option<JsonValue>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateScore {
     pub score: Option<String>,  // Changed to String
     pub score_val: Option<f64>, // Renamed from score_num

@@ -1,0 +1,110 @@
+name: Generate and Deploy Documentation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        
+      - name: Generate OpenAPI spec
+        run: cargo run --bin generate_openapi
+        
+      - name: Download and setup Swagger UI
+        run: |
+          # Download Swagger UI
+          SWAGGER_VERSION="5.11.0"
+          curl -L "https://github.com/swagger-api/swagger-ui/archive/v${SWAGGER_VERSION}.tar.gz" | tar -xz
+          
+          # Move files to docs/assets
+          mkdir -p docs/assets
+          cp -r "swagger-ui-${SWAGGER_VERSION}/dist/"* docs/assets/
+          
+          # Clean up
+          rm -rf "swagger-ui-${SWAGGER_VERSION}"
+          
+          # Configure Swagger UI to use our spec
+          sed -i 's|https://petstore.swagger.io/v2/swagger.json|./openapi.json|g' docs/assets/swagger-initializer.js
+          
+      - name: Create index.html
+        run: |
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <title>LEADR API Documentation</title>
+              <link rel="stylesheet" type="text/css" href="./assets/swagger-ui.css" />
+              <link rel="stylesheet" type="text/css" href="./assets/index.css" />
+              <link rel="icon" type="image/png" href="./assets/favicon-32x32.png" sizes="32x32" />
+              <link rel="icon" type="image/png" href="./assets/favicon-16x16.png" sizes="16x16" />
+              <style>
+                  html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+                  *, *:before, *:after { box-sizing: inherit; }
+                  body { margin:0; background: #fafafa; }
+              </style>
+          </head>
+          <body>
+              <div id="swagger-ui"></div>
+              <script src="./assets/swagger-ui-bundle.js"></script>
+              <script src="./assets/swagger-ui-standalone-preset.js"></script>
+              <script>
+                  window.onload = function() {
+                      SwaggerUIBundle({
+                          url: './openapi.json',
+                          dom_id: '#swagger-ui',
+                          deepLinking: true,
+                          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+                          plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+                          layout: "StandaloneLayout"
+                      });
+                  };
+              </script>
+          </body>
+          </html>
+          EOF
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+  deploy:
+    needs: generate-docs
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -36,6 +36,19 @@ struct ExportRow {
 /// # Errors
 /// Returns `ApiError::Database` if the database query fails.
 /// Returns `ApiError::ValidationError` if CSV serialization fails.
+#[utoipa::path(
+    get,
+    path = "/export",
+    responses(
+        (status = 200, description = "CSV file with all data", content_type = "text/csv"),
+        (status = 401, description = "Missing or invalid API key"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("api_key" = [])
+    ),
+    tag = "Export"
+)]
 pub async fn export_data(State(pool): State<DbPool>) -> Result<impl IntoResponse, ApiError> {
     // Query to get denormalized game-score data (including soft-deleted records for complete backup)
     let rows = sqlx::query(

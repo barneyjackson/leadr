@@ -18,7 +18,7 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
 Deploy our prebuilt & production-ready image to your preferred cloud host:
 
 ```plaintext
-ghcr.io/[your-github-username]/leadr:latest
+ghcr.io/barneyjackson/leadr:latest
 ```
 
 Or try it out locally:
@@ -29,7 +29,7 @@ docker run -d \
   -p 3000:3000 \
   -v leadr_data:/app/data \
   -e LEADR_API_KEY=your-secure-api-key \
-  ghcr.io/[your-github-username]/leadr:latest
+  ghcr.io/barneyjackson/leadr:latest
 
 # Test it's working
 curl http://localhost:3000/health
@@ -45,6 +45,13 @@ curl http://localhost:3000/health
 ## API Overview
 
 All requests require the `leadr-api-key` header with your configured API key.
+
+### API Documentation
+
+- **📖 Online Documentation**: [https://barneyjackson.github.io/leadr/](https://barneyjackson.github.io/leadr/) (GitHub Pages)
+- **🔧 Interactive Testing**: When running locally, visit `/swagger-ui` for interactive API documentation
+
+The documentation is automatically generated from the code and updated on every push to main.
 
 ### Create a Game/Leaderboard
 
@@ -166,7 +173,7 @@ docker run -d \
   -v /path/to/backup.csv:/data/seed.csv \
   -e LEADR_SEED_FILE=/data/seed.csv \
   -e LEADR_API_KEY=your-api-key \
-  ghcr.io/[your-github-username]/leadr:latest
+  ghcr.io/barneyjackson/leadr:latest
 ```
 
 Import only happens if the database is empty.
@@ -235,6 +242,20 @@ cargo db-prepare
 
 # Seed from CSV
 LEADR_SEED_FILE=data.csv cargo db-seed
+```
+
+### Documentation Generation
+
+```bash
+# Generate OpenAPI spec only
+cargo run --bin generate_openapi
+
+# Generate complete static documentation site
+./scripts/generate-docs.sh
+
+# View locally (after generating docs)
+cd docs && python3 -m http.server 8000
+# Then open: http://localhost:8000
 ```
 
 ### Release Process
