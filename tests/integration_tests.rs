@@ -9,6 +9,9 @@ use tower::util::ServiceExt;
 
 // Helper function to create test app with in-memory database
 async fn create_test_app() -> Router {
+    // Set the API key environment variable before creating the app
+    std::env::set_var("LEADR_API_KEY", "test_api_key_123");
+    
     let pool = db::create_pool("sqlite::memory:").await.unwrap();
     db::run_migrations(&pool).await.unwrap();
     create_app(pool)
@@ -62,7 +65,6 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_game_success() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let game_data = json!({
@@ -84,7 +86,6 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_game_missing_name() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let game_data = json!({
@@ -107,7 +108,7 @@ mod game_endpoint_tests {
     async fn test_create_game_without_auth() {
         let app = create_test_app().await;
 
-        let game_data = json!({
+        let _game_data = json!({
             "name": "Test Game",
             "description": "Should fail without auth"
         });
@@ -139,23 +140,47 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_game_success() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
-        // This test assumes the game exists - in real implementation
-        // we'd first create a game, then try to retrieve it
-        let response = app
-            .oneshot(request_with_api_key("GET", "/games/abc123", None))
+        // First create a game
+        let game_data = json!({
+            "name": "Test Game",
+            "description": "A test game"
+        });
+
+        let create_response = app
+            .clone()
+            .oneshot(request_with_api_key(
+                "POST",
+                "/games",
+                Some(&game_data.to_string()),
+            ))
             .await
             .unwrap();
 
-        // Should be NOT_FOUND since game doesn't exist yet
-        assert!(response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::OK);
+        assert_eq!(create_response.status(), StatusCode::CREATED);
+        
+        // Extract the created game's hex_id from response
+        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX).await.unwrap();
+        let created_game: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let hex_id = created_game["hex_id"].as_str().unwrap();
+
+        // Now try to retrieve it
+        let response = app
+            .oneshot(request_with_api_key("GET", &format!("/games/{}", hex_id), None))
+            .await
+            .unwrap();
+
+        let status = response.status();
+        if status != StatusCode::OK {
+            let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+            let error_msg = String::from_utf8_lossy(&body);
+            panic!("Expected 200 OK, got {} with body: {}", status, error_msg);
+        }
     }
 
     #[tokio::test]
     async fn test_get_game_invalid_hex_id() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -172,7 +197,6 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_list_games_success() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -197,9 +221,32 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_game_success() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
+        // First create a game
+        let game_data = json!({
+            "name": "Original Game",
+            "description": "Original description"
+        });
+
+        let create_response = app
+            .clone()
+            .oneshot(request_with_api_key(
+                "POST",
+                "/games",
+                Some(&game_data.to_string()),
+            ))
+            .await
+            .unwrap();
+
+        assert_eq!(create_response.status(), StatusCode::CREATED);
+        
+        // Extract the created game's hex_id from response
+        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX).await.unwrap();
+        let created_game: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let hex_id = created_game["hex_id"].as_str().unwrap();
+
+        // Now update it
         let update_data = json!({
             "name": "Updated Game Name"
         });
@@ -207,42 +254,86 @@ mod game_endpoint_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "PUT",
-                "/games/abc123",
+                &format!("/games/{}", hex_id),
                 Some(&update_data.to_string()),
             ))
             .await
             .unwrap();
 
-        // Should be NOT_FOUND since game doesn't exist, or OK if it does
-        assert!(response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::OK);
+        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
     async fn test_update_game_empty_body() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
+        // First create a game
+        let game_data = json!({
+            "name": "Test Game",
+            "description": "Test description"
+        });
+
+        let create_response = app
+            .clone()
+            .oneshot(request_with_api_key(
+                "POST",
+                "/games",
+                Some(&game_data.to_string()),
+            ))
+            .await
+            .unwrap();
+
+        assert_eq!(create_response.status(), StatusCode::CREATED);
+        
+        // Extract the created game's hex_id from response
+        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX).await.unwrap();
+        let created_game: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let hex_id = created_game["hex_id"].as_str().unwrap();
+
+        // Now try empty update
         let response = app
-            .oneshot(request_with_api_key("PUT", "/games/abc123", Some("{}")))
+            .oneshot(request_with_api_key("PUT", &format!("/games/{}", hex_id), Some("{}")))
             .await
             .unwrap();
 
         // Empty update should still be valid
-        assert!(response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::OK);
+        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
     async fn test_delete_game_soft_delete() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
-        let response = app
-            .oneshot(request_with_api_key("DELETE", "/games/abc123", None))
+        // First create a game
+        let game_data = json!({
+            "name": "Test Game to Delete",
+            "description": "Will be deleted"
+        });
+
+        let create_response = app
+            .clone()
+            .oneshot(request_with_api_key(
+                "POST",
+                "/games",
+                Some(&game_data.to_string()),
+            ))
             .await
             .unwrap();
 
-        // Should be NOT_FOUND since game doesn't exist, or NO_CONTENT if it does
-        assert!(response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::NO_CONTENT);
+        assert_eq!(create_response.status(), StatusCode::CREATED);
+        
+        // Extract the created game's hex_id from response
+        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX).await.unwrap();
+        let created_game: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let hex_id = created_game["hex_id"].as_str().unwrap();
+
+        // Now delete it
+        let response = app
+            .oneshot(request_with_api_key("DELETE", &format!("/games/{}", hex_id), None))
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
     }
 }
 
@@ -252,7 +343,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_success() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let score_data = json!({
@@ -281,7 +371,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_minimal_data() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let score_data = json!({
@@ -307,7 +396,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_missing_required_fields() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let score_data = json!({
@@ -330,7 +418,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_invalid_user_name() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let score_data = json!({
@@ -354,7 +441,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_invalid_user_id() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let score_data = json!({
@@ -396,7 +482,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_game_scores_success() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -410,7 +495,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_global_scores_without_game_filter() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -424,7 +508,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_game_scores_with_query_params() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -453,7 +536,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_score_success() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let update_data = json!({
@@ -476,7 +558,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_score_partial_update() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let update_data = json!({
@@ -498,7 +579,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_score_invalid_data() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let update_data = json!({
@@ -535,7 +615,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_single_score() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -549,7 +628,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_delete_score_soft_delete() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -563,7 +641,6 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_complex_extra_data() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let complex_extra = json!({
@@ -608,7 +685,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_list_games_with_pagination() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -621,7 +697,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_list_games_with_cursor() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -634,7 +709,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_list_games_with_invalid_cursor() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -651,7 +725,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_list_games_with_oversized_limit() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         // Should cap at max limit
@@ -665,7 +738,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_default_sorting() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         // Default should be sorted by score descending
@@ -679,7 +751,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_sort_by_date_asc() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -696,7 +767,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_sort_by_user_name_desc() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -713,7 +783,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_sort_by_score_desc() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -730,7 +799,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_with_pagination() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -747,7 +815,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_with_cursor_and_sorting() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -764,7 +831,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_invalid_sort_field() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -781,7 +847,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_invalid_sort_order() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -798,7 +863,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_invalid_cursor() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -815,7 +879,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_scores_pagination_consistency() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         // Test that the same sort parameters work consistently with pagination
@@ -833,7 +896,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_environment_page_size_override() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         std::env::set_var("LEADR_PAGE_SIZE", "10");
         let app = create_test_app().await;
 
@@ -851,7 +913,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_scores_response_structure() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app
@@ -872,7 +933,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_complex_query_parameters() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         // Test combination of all query parameters
@@ -888,7 +948,6 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_export_csv_backup() {
-        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
         let response = app

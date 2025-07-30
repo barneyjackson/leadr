@@ -107,7 +107,7 @@ impl Game {
         }
         if !hex_id
             .chars()
-            .all(|c| c.is_ascii_alphanumeric() && c.is_ascii_lowercase())
+            .all(|c| c.is_ascii_digit() || c.is_ascii_lowercase())
         {
             return Err(
                 "Hex ID must contain only lowercase alphanumeric characters (0-9, a-z)".to_string(),

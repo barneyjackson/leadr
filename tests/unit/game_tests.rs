@@ -170,10 +170,10 @@ fn test_validate_hex_id_invalid_length() {
 
 #[test]
 fn test_validate_hex_id_invalid_characters() {
-    assert!(Game::validate_hex_id("abcxyz").is_err());
+    assert!(Game::validate_hex_id("abc@yz").is_err()); // special characters not allowed
     assert!(Game::validate_hex_id("ABC123").is_err()); // uppercase not allowed
-    assert!(Game::validate_hex_id("123-45").is_err());
-    assert!(Game::validate_hex_id("12 345").is_err());
+    assert!(Game::validate_hex_id("123-45").is_err()); // hyphen not allowed
+    assert!(Game::validate_hex_id("12 345").is_err()); // space not allowed
 }
 
 #[test]
