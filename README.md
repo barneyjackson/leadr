@@ -42,14 +42,17 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
 - [x] ~~**Design and implement Score model with relationships and JSON extras**~~
 - [x] ~~**Create database migrations for games and scores tables**~~
 - [x] ~~**Add API key authentication middleware**~~
+- [ ] Create Docker configuration files (Dockerfile, docker-compose, .dockerignore)
+- [ ] No rate limiting - vulnerable to abuse
+- [ ] Add a "restore"/seed mechanism, that can take an optional CSV mounted and image build time and populate the SQLite DB. Unless you think there's a better way to achieve the same thing
 
 ### API Endpoints
 - [x] ~~**Implement CRUD endpoints for games (Create, Read, Update)**~~
 - [x] ~~**Implement CRUD endpoints for scores (Create, Read, Update)**~~
 - [x] ~~**Restructure endpoints to use top-level /scores with query parameters**~~
 - [x] ~~**Add global leaderboard functionality (scores across all games)**~~
-- [ ] Add leaderboard ranking and filtering capabilities
-- [ ] Add batch operations for high-frequency score submissions
+- [x] Expose DELETE endpoints in router (handlers exist but routes are missing)
+- [ ] Add /download endpoint that exports the full SQLite DB as a CSV as a means of taking a backup of data, as the DB will on'y exist in the Docker container and won't be truly persisted
 
 ### Testing & Quality
 - [x] ~~Set up comprehensive test suite with TDD approach~~
@@ -144,6 +147,7 @@ POST   /games              # Create a new leaderboard
 GET    /games              # List all leaderboards (paginated)
 GET    /games/{hex_id}     # Get specific leaderboard
 PUT    /games/{hex_id}     # Update leaderboard
+DELETE /games/{hex_id}     # Soft delete leaderboard
 ```
 
 **Pagination Parameters for `/games`:**
@@ -156,6 +160,7 @@ POST   /scores                   # Submit a new score (game_hex_id in JSON body)
 GET    /scores                   # Get scores with optional game filtering (paginated & sortable)
 GET    /scores/{id}              # Get a specific score
 PUT    /scores/{id}              # Update a score
+DELETE /scores/{id}              # Soft delete a score
 ```
 
 **Query Parameters for `/scores`:**

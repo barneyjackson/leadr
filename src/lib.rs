@@ -7,7 +7,7 @@ pub mod utils;
 
 use axum::{
     middleware,
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Router,
 };
 use tower_http::cors::CorsLayer;
@@ -25,10 +25,12 @@ pub fn create_app(pool: DbPool) -> Router {
         .route("/games", post(handlers::game::create_game))
         .route("/games/:hex_id", get(handlers::game::get_game))
         .route("/games/:hex_id", put(handlers::game::update_game))
+        .route("/games/:hex_id", delete(handlers::game::delete_game))
         .route("/scores", get(handlers::score::list_scores))
         .route("/scores", post(handlers::score::create_score))
         .route("/scores/:id", get(handlers::score::get_score))
         .route("/scores/:id", put(handlers::score::update_score))
+        .route("/scores/:id", delete(handlers::score::delete_score))
         .layer(middleware::from_fn(api_key_middleware));
 
     Router::new()

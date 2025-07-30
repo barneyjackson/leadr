@@ -231,9 +231,8 @@ mod game_endpoint_tests {
         assert!(response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::OK);
     }
 
-    // Test that DELETE is not supported (per requirements)
     #[tokio::test]
-    async fn test_delete_game_not_supported() {
+    async fn test_delete_game_soft_delete() {
         std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
@@ -242,7 +241,8 @@ mod game_endpoint_tests {
             .await
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+        // Should be NOT_FOUND since game doesn't exist, or NO_CONTENT if it does
+        assert!(response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::NO_CONTENT);
     }
 }
 
@@ -547,9 +547,8 @@ mod score_endpoint_tests {
         assert!(response.status() == StatusCode::OK || response.status() == StatusCode::NOT_FOUND);
     }
 
-    // Test that DELETE is not supported for scores either
     #[tokio::test]
-    async fn test_delete_score_not_supported() {
+    async fn test_delete_score_soft_delete() {
         std::env::set_var("LEADR_API_KEY", "test_api_key_123");
         let app = create_test_app().await;
 
@@ -558,7 +557,8 @@ mod score_endpoint_tests {
             .await
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+        // Should be NOT_FOUND since score doesn't exist, or NO_CONTENT if it does
+        assert!(response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::NO_CONTENT);
     }
 
     #[tokio::test]
