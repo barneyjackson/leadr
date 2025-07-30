@@ -1,14 +1,13 @@
 # Rust
 /target
-Cargo.lock
 
 # Database
 *.db
 *.db-shm
 *.db-wal
 
-# SQLx - uncomment during active development if causing merge conflicts
-.sqlx/
+# SQLx - offline query data needed for Docker builds
+# .sqlx/
 
 # Environment
 .env

@@ -34,44 +34,12 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
 ## TODO List
 
 ### Core Infrastructure
-- [x] ~~Set up Rust project with Axum web framework~~
-- [x] ~~Configure SQLite database with migrations~~
-- [x] ~~Implement error handling and logging~~
-- [x] ~~Add hot reload development setup~~
-- [x] ~~**Design and implement Game model with hex ID and soft delete**~~
-- [x] ~~**Design and implement Score model with relationships and JSON extras**~~
-- [x] ~~**Create database migrations for games and scores tables**~~
-- [x] ~~**Add API key authentication middleware**~~
 - [ ] Create Docker configuration files (Dockerfile, docker-compose, .dockerignore)
-- [ ] No rate limiting - vulnerable to abuse
-- [ ] Add a "restore"/seed mechanism, that can take an optional CSV mounted and image build time and populate the SQLite DB. Unless you think there's a better way to achieve the same thing
-
-### API Endpoints
-- [x] ~~**Implement CRUD endpoints for games (Create, Read, Update)**~~
-- [x] ~~**Implement CRUD endpoints for scores (Create, Read, Update)**~~
-- [x] ~~**Restructure endpoints to use top-level /scores with query parameters**~~
-- [x] ~~**Add global leaderboard functionality (scores across all games)**~~
-- [x] Expose DELETE endpoints in router (handlers exist but routes are missing)
-- [ ] Add /download endpoint that exports the full SQLite DB as a CSV as a means of taking a backup of data, as the DB will on'y exist in the Docker container and won't be truly persisted
 
 ### Testing & Quality
-- [x] ~~Set up comprehensive test suite with TDD approach~~
-- [x] ~~Add integration tests for all endpoints~~
 - [ ] **Code Quality & Documentation Improvements**
-  - [x] ~~Add comprehensive documentation with `# Errors` and `# Panics` sections for all public functions~~
-  - [x] ~~Implement `#[must_use]` attributes on constructor and validation methods for better API safety~~
-  - [x] ~~Replace redundant closures with direct function references for better performance~~
-  - [x] ~~Modernize string formatting to use inline variable syntax (`format!("text: {var}")`)~~
-  - [x] ~~Fix lossless type casting to use `From::from()` instead of `as` for type safety~~
-  - [x] ~~Resolve code organization issues (import ordering, item placement, raw string usage)~~
-  - [x] ~~**Add missing `# Errors` documentation to 20+ handler functions (TOP PRIORITY - 20 warnings)**~~
-  - [x] ~~**Add proper backticks around code terms in documentation (13 warnings)**~~
-  - [x] ~~**Add `#[must_use]` attributes to utility methods (12 warnings)**~~
-  - [x] ~~**Complete string formatting modernization (9 remaining instances)**~~
-  - [x] ~~Fix double `#[must_use]` attributes on Result-returning functions (4 warnings)~~
   - [ ] Merge duplicate error handling match arms to reduce code duplication
   - [ ] Add missing `# Panics` documentation for functions that may panic
-  - [x] ~~Replace manual clamp logic with `.clamp()` method~~
   - [ ] Optimize string building in hex ID generation
 - [ ] Add performance benchmarks
 - [ ] Set up CI/CD pipeline with automated quality checks
@@ -150,7 +118,33 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
    cargo fmt --check
    ```
 
-6. **Test the health endpoint**:
+6. **Docker development**:
+   ```bash
+   # Build production Docker image
+   docker buildx build -t leadr-api --load .
+   
+   # Run with Docker (requires API key)
+   docker run -p 3000:3000 \
+     -e LEADR_API_KEY=your_secret_key \
+     -e RUST_LOG=info \
+     leadr-api
+   
+   # Run with persistent database volume
+   docker run -p 3000:3000 \
+     -v $(pwd)/data:/app/data \
+     -e DATABASE_URL=sqlite:/app/data/leadr.db \
+     -e LEADR_API_KEY=your_secret_key \
+     leadr-api
+   
+   # Run with CSV seeding
+   docker run -p 3000:3000 \
+     -v /path/to/backup.csv:/data/seed.csv \
+     -e LEADR_SEED_FILE=/data/seed.csv \
+     -e LEADR_API_KEY=your_secret_key \
+     leadr-api
+   ```
+
+7. **Test the health endpoint**:
    ```bash
    curl http://localhost:3000/health
    ```

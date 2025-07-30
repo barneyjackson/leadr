@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE game SET deleted_at = ?1, updated_at = ?1 WHERE hex_id = ?2 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "30fa1fe4d478e36c036c47041a3d45896c86b3700cac9e89d33e142f01341cf9"
+}

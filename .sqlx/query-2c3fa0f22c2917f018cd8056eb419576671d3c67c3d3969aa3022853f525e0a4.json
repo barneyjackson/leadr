@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE game \n            SET deleted_at = NULL, updated_at = ?1\n            WHERE hex_id = ?2 AND deleted_at IS NOT NULL\n            RETURNING id, hex_id, name, description, created_at, updated_at, deleted_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "hex_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 4,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "deleted_at",
+        "ordinal": 6,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "2c3fa0f22c2917f018cd8056eb419576671d3c67c3d3969aa3022853f525e0a4"
+}

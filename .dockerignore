@@ -1,0 +1,52 @@
+# Build artifacts
+target/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation and development files
+README.md
+dev_notes.md
+*.md
+
+# Test files
+test_seed.csv
+tests/
+
+# Database files (should be mounted or created at runtime)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Environment files (secrets should be passed as env vars)
+.env
+.env.local
+.env.*.local
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+
+# Temporary files
+tmp/
+temp/
