@@ -1,0 +1,5 @@
+[build]
+
+[alias]
+test-sequential = "test -- --test-threads=1"
+test-integration = "test --test integration_tests -- --test-threads=1"

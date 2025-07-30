@@ -1,0 +1,1 @@
+-- Initial migration - placeholder for future tables
