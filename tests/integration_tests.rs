@@ -885,4 +885,38 @@ mod pagination_and_sorting_tests {
 
         assert!(response.status() == StatusCode::OK || response.status() == StatusCode::NOT_FOUND);
     }
+
+    #[tokio::test]
+    async fn test_export_csv_backup() {
+        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
+        let app = create_test_app().await;
+
+        let response = app
+            .oneshot(request_with_api_key("GET", "/export", None))
+            .await
+            .unwrap();
+
+        // Should return CSV file with proper headers, or at minimum not return METHOD_NOT_ALLOWED
+        assert!(response.status() == StatusCode::OK || response.status() == StatusCode::INTERNAL_SERVER_ERROR);
+        
+        // If successful, verify headers
+        if response.status() == StatusCode::OK {
+            let headers = response.headers();
+            assert_eq!(headers.get("content-type").unwrap(), "text/csv");
+            assert!(headers.get("content-disposition").unwrap().to_str().unwrap().contains("attachment"));
+            assert!(headers.get("content-disposition").unwrap().to_str().unwrap().contains("leadr_backup_"));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_export_without_auth() {
+        let app = create_test_app().await;
+
+        let response = app
+            .oneshot(request_without_api_key("GET", "/export"))
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
 }

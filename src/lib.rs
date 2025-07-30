@@ -31,6 +31,7 @@ pub fn create_app(pool: DbPool) -> Router {
         .route("/scores/:id", get(handlers::score::get_score))
         .route("/scores/:id", put(handlers::score::update_score))
         .route("/scores/:id", delete(handlers::score::delete_score))
+        .route("/export", get(handlers::export::export_data))
         .layer(middleware::from_fn(api_key_middleware));
 
     Router::new()

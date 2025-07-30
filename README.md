@@ -163,6 +163,11 @@ PUT    /scores/{id}              # Update a score
 DELETE /scores/{id}              # Soft delete a score
 ```
 
+### Data Export & Backup
+```http
+GET    /export                   # Download CSV backup of all game and score data
+```
+
 **Query Parameters for `/scores`:**
 - `game_hex_id` - Filter scores for a specific game (optional - omit for global leaderboard)
 - `limit` - Number of scores per page (default: 25, max: 100)
