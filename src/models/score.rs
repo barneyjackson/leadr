@@ -47,7 +47,7 @@ impl From<ScoreRow> for Score {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct CreateScore {
     pub game_hex_id: String,
     pub score: String,          // Changed to String

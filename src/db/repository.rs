@@ -62,6 +62,53 @@ impl GameRepository {
         Ok(game)
     }
 
+    /// Create a new game with a specific hex_id and timestamp (for seeding)
+    ///
+    /// # Errors
+    /// Returns `ApiError::ValidationError` if the game name or hex_id is invalid.
+    /// Returns `ApiError::DatabaseError` if the database operation fails.
+    pub async fn create_with_hex_id(
+        pool: &SqlitePool, 
+        create_data: CreateGame, 
+        hex_id: String,
+        created_at: chrono::DateTime<Utc>
+    ) -> Result<Game> {
+        // Validate inputs and normalize hex_id
+        Game::validate_name(&create_data.name)?;
+        let normalized_hex_id = Game::normalize_and_validate_hex_id(&hex_id).map_err(ApiError::InvalidParameter)?;
+
+        let created_at_naive = created_at.naive_utc();
+        let updated_at_naive = created_at.naive_utc();
+
+        let row = sqlx::query!(
+            r#"
+            INSERT INTO game (hex_id, name, description, created_at, updated_at)
+            VALUES (?1, ?2, ?3, ?4, ?5)
+            RETURNING id, hex_id, name, description, created_at, updated_at, deleted_at
+            "#,
+            normalized_hex_id,
+            create_data.name,
+            create_data.description,
+            created_at_naive,
+            updated_at_naive
+        )
+        .fetch_one(pool)
+        .await?;
+
+        let game_row = GameRow {
+            id: row.id,
+            hex_id: row.hex_id,
+            name: row.name,
+            description: row.description,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            deleted_at: row.deleted_at,
+        };
+
+        let game = Game::from(game_row);
+        Ok(game)
+    }
+
     /// Get a game by `hex_id`
     ///
     /// # Errors
@@ -396,6 +443,70 @@ impl ScoreRepository {
             create_data.user_id,
             extra_json,
             now_naive
+        )
+        .fetch_one(pool)
+        .await?;
+
+        let score_row = ScoreRow {
+            id: row.id,
+            game_hex_id: row.game_hex_id,
+            score: row.score,
+            score_val: row.score_val,
+            user_name: row.user_name,
+            user_id: row.user_id,
+            extra: row.extra,
+            submitted_at: row.submitted_at,
+            deleted_at: row.deleted_at,
+        };
+
+        let score = Score::from(score_row);
+        Ok(score)
+    }
+
+    /// Create a new score with a specific timestamp (for seeding)
+    ///
+    /// # Errors
+    /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
+    /// Returns `ApiError::DatabaseError` if the database operation fails.
+    pub async fn create_with_timestamp(
+        pool: &SqlitePool, 
+        create_data: CreateScore,
+        submitted_at: chrono::DateTime<Utc>
+    ) -> Result<Score> {
+        // Validate inputs
+        Score::validate_user_name(&create_data.user_name)?;
+        Score::validate_user_id(&create_data.user_id)?;
+
+        // Validate JSON if provided
+        if let Some(ref extra) = create_data.extra {
+            serde_json::to_string(extra).map_err(|e| {
+                ApiError::ValidationError(format!("Invalid JSON in extra field: {e}"))
+            })?;
+        }
+
+        // Parse score_val from score if not provided
+        let score_val = create_data
+            .score_val
+            .unwrap_or_else(|| create_data.score.parse::<f64>().unwrap_or(0.0));
+
+        let submitted_at_naive = submitted_at.naive_utc();
+        let extra_json = create_data
+            .extra
+            .map(|v| serde_json::to_string(&v).unwrap());
+
+        let row = sqlx::query!(
+            r#"
+            INSERT INTO score (game_hex_id, score, score_val, user_name, user_id, extra, submitted_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            RETURNING id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
+            "#,
+            create_data.game_hex_id,
+            create_data.score,
+            score_val,
+            create_data.user_name,
+            create_data.user_id,
+            extra_json,
+            submitted_at_naive
         )
         .fetch_one(pool)
         .await?;

@@ -40,7 +40,7 @@ impl From<GameRow> for Game {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct CreateGame {
     pub name: String,
     pub description: Option<String>,
@@ -76,7 +76,28 @@ impl Game {
         }
     }
 
-    /// Validates that a hex ID has the correct format (6 lowercase hex characters).
+    /// Normalizes and validates a hex ID. Converts to lowercase and validates format.
+    /// 
+    /// # Errors
+    /// Returns an error string if the hex ID is not exactly 6 characters or contains invalid characters.
+    pub fn normalize_and_validate_hex_id(hex_id: &str) -> Result<String, String> {
+        if hex_id.len() != 6 {
+            return Err("Hex ID must be exactly 6 characters".to_string());
+        }
+        
+        let normalized = hex_id.to_lowercase();
+        if !normalized
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric())
+        {
+            return Err(
+                "Hex ID must contain only alphanumeric characters (0-9, a-z, A-Z)".to_string(),
+            );
+        }
+        Ok(normalized)
+    }
+
+    /// Validates that a hex ID has the correct format (6 lowercase alphanumeric characters).
     /// 
     /// # Errors
     /// Returns an error string if the hex ID is not exactly 6 characters or contains invalid characters.
@@ -86,10 +107,10 @@ impl Game {
         }
         if !hex_id
             .chars()
-            .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
+            .all(|c| c.is_ascii_alphanumeric() && c.is_ascii_lowercase())
         {
             return Err(
-                "Hex ID must contain only lowercase hexadecimal characters (0-9, a-f)".to_string(),
+                "Hex ID must contain only lowercase alphanumeric characters (0-9, a-z)".to_string(),
             );
         }
         Ok(())

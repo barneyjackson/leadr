@@ -1,0 +1,5 @@
+game_hex_id,game_name,game_description,game_created_at,game_updated_at,game_deleted_at,score_id,score_value,score_val,user_name,user_id,extra,score_submitted_at,score_updated_at,score_deleted_at
+ABC123,Test Game 1,A test game for seeding,2024-01-01T10:00:00Z,2024-01-01T10:00:00Z,,1,100,100.0,Player1,user1,"{""level"": 1}",2024-01-01T10:05:00Z,2024-01-01T10:05:00Z,
+ABC123,Test Game 1,A test game for seeding,2024-01-01T10:00:00Z,2024-01-01T10:00:00Z,,2,200,200.0,Player2,user2,,2024-01-01T10:10:00Z,2024-01-01T10:10:00Z,
+XYZ789,Test Game 2,Another test game,2024-01-01T11:00:00Z,2024-01-01T11:00:00Z,,,,,,,,,,
+Game01,Test Game 3,Third test game,2024-01-01T12:00:00Z,2024-01-01T12:00:00Z,,3,150,150.0,Player3,user3,,2024-01-01T12:05:00Z,2024-01-01T12:05:00Z,

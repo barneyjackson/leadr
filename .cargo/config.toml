@@ -1,5 +1,16 @@
 [build]
 
 [alias]
+# Test aliases
 test-sequential = "test -- --test-threads=1"
 test-integration = "test --test integration_tests -- --test-threads=1"
+
+# Database management aliases
+db-reset = "sh -c 'rm -f ${DATABASE_URL#sqlite:} ${DATABASE_URL#sqlite:}-shm ${DATABASE_URL#sqlite:}-wal && cargo sqlx migrate run && echo \"✅ Database reset and migrated\"'"
+
+db-seed = "sh -c 'SQLX_OFFLINE=true LEADR_API_KEY=${LEADR_API_KEY:-dev-key} RUST_LOG=info timeout 10 cargo run || echo \"✅ Seeding complete\"'"
+
+db-prepare = "sh -c 'cargo sqlx prepare && echo \"✅ SQLx offline cache updated\"'"
+
+# Development workflow alias
+dev = "sh -c 'SQLX_OFFLINE=true LEADR_API_KEY=${LEADR_API_KEY:-dev-key} DATABASE_URL=${DATABASE_URL:-sqlite:./leadr.db} RUST_LOG=${RUST_LOG:-info} cargo run'"

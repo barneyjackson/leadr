@@ -15,11 +15,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     });
 
-    let database_url =
-        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:./leadr.db".to_string());
-
-    let pool = db::create_pool(&database_url).await?;
-    db::run_migrations(&pool).await?;
+    // Initialize database with proper lifecycle management
+    let pool = db::initialize_database().await?;
 
     let app = create_app(pool);
 

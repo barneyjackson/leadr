@@ -102,12 +102,28 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
    cargo build
    ```
 
-2. **Run with hot reload**:
+2. **Start development server**:
    ```bash
-   cargo watch -x run
+   # Start server with optimal development settings
+   cargo dev
+   
+   # Or with hot reload for rapid development
+   cargo watch -x dev
    ```
 
-3. **Run tests**:
+3. **Database management**:
+   ```bash
+   # Reset database (clears + runs all migrations)
+   cargo db-reset
+   
+   # Seed database with CSV data (set LEADR_SEED_FILE env var)
+   LEADR_SEED_FILE=your_data.csv cargo db-seed
+   
+   # Update SQLx offline query cache for compilation
+   cargo db-prepare
+   ```
+
+4. **Run tests**:
    ```bash
    # Run all tests
    cargo test
@@ -119,7 +135,7 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
    cargo test-integration
    ```
 
-4. **Code quality checks**:
+5. **Code quality checks**:
    ```bash
    # Format code
    cargo fmt
@@ -134,7 +150,7 @@ Whether you're building a retro arcade game, puzzle platformer, or competitive m
    cargo fmt --check
    ```
 
-5. **Test the health endpoint**:
+6. **Test the health endpoint**:
    ```bash
    curl http://localhost:3000/health
    ```
@@ -167,6 +183,31 @@ DELETE /scores/{id}              # Soft delete a score
 ```http
 GET    /export                   # Download CSV backup of all game and score data
 ```
+
+The `/export` endpoint generates a timestamped CSV file (e.g., `leadr_backup_20250730_105929.csv`) containing denormalized game-score data. Each row includes all game information plus score details, making it easy to restore or analyze your leaderboard data.
+
+### Data Import & Seeding
+
+LEADR automatically checks for a seed file on startup and imports data if the database is empty:
+
+**Environment Variables:**
+- `LEADR_SEED_FILE` - Path to CSV file for seeding (default: `/data/seed.csv`)
+
+**Docker Usage:**
+```bash
+# Mount your backup CSV and set the seed file path
+docker run -v /path/to/backup.csv:/data/seed.csv \
+           -e LEADR_SEED_FILE=/data/seed.csv \
+           -e LEADR_API_KEY=your_secret_key \
+           your-leadr-image
+```
+
+**Seeding Behavior:**
+- Only seeds if database is empty (no games exist)
+- Preserves original timestamps from CSV
+- Skips invalid/incomplete rows
+- Logs import progress and results
+- Non-blocking: server starts even if seeding fails
 
 **Query Parameters for `/scores`:**
 - `game_hex_id` - Filter scores for a specific game (optional - omit for global leaderboard)
@@ -222,7 +263,8 @@ Set these environment variables:
 
 ```bash
 DATABASE_URL=sqlite:./leadr.db    # Database location
-LEADR_API_KEY=your_secret_key     # API authentication
+LEADR_API_KEY=your_secret_key     # API authentication (required)
+LEADR_SEED_FILE=/data/seed.csv    # CSV file for database seeding (optional)
 LEADR_PAGE_SIZE=25                # Default pagination page size (max: 100)
 RUST_LOG=info                     # Logging level
 ```
