@@ -256,6 +256,7 @@ mod score_endpoint_tests {
         let app = create_test_app().await;
 
         let score_data = json!({
+            "game_hex_id": "abc123",
             "score": "1000",
             "score_val": 1000.5,
             "user_name": "TestPlayer",
@@ -266,7 +267,7 @@ mod score_endpoint_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "POST",
-                "/games/abc123/scores",
+                "/scores",
                 Some(&score_data.to_string()),
             ))
             .await
@@ -284,6 +285,7 @@ mod score_endpoint_tests {
         let app = create_test_app().await;
 
         let score_data = json!({
+            "game_hex_id": "abc123",
             "score": "500",
             "user_name": "Player",
             "user_id": "id123"
@@ -292,7 +294,7 @@ mod score_endpoint_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "POST",
-                "/games/abc123/scores",
+                "/scores",
                 Some(&score_data.to_string()),
             ))
             .await
@@ -309,6 +311,7 @@ mod score_endpoint_tests {
         let app = create_test_app().await;
 
         let score_data = json!({
+            "game_hex_id": "abc123",
             "score": 500
             // Missing user_name and user_id
         });
@@ -316,7 +319,7 @@ mod score_endpoint_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "POST",
-                "/games/abc123/scores",
+                "/scores",
                 Some(&score_data.to_string()),
             ))
             .await
@@ -331,6 +334,7 @@ mod score_endpoint_tests {
         let app = create_test_app().await;
 
         let score_data = json!({
+            "game_hex_id": "abc123",
             "score": "500",
             "user_name": "",  // Empty name should be invalid
             "user_id": "id123"
@@ -339,7 +343,7 @@ mod score_endpoint_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "POST",
-                "/games/abc123/scores",
+                "/scores",
                 Some(&score_data.to_string()),
             ))
             .await
@@ -354,6 +358,7 @@ mod score_endpoint_tests {
         let app = create_test_app().await;
 
         let score_data = json!({
+            "game_hex_id": "abc123",
             "score": "500",
             "user_name": "Player",
             "user_id": ""  // Empty ID should be invalid
@@ -362,7 +367,7 @@ mod score_endpoint_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "POST",
-                "/games/abc123/scores",
+                "/scores",
                 Some(&score_data.to_string()),
             ))
             .await
@@ -382,7 +387,7 @@ mod score_endpoint_tests {
         });
 
         let response = app
-            .oneshot(request_without_api_key("POST", "/games/abc123/scores"))
+            .oneshot(request_without_api_key("POST", "/scores"))
             .await
             .unwrap();
 
@@ -395,12 +400,26 @@ mod score_endpoint_tests {
         let app = create_test_app().await;
 
         let response = app
-            .oneshot(request_with_api_key("GET", "/games/abc123/scores", None))
+            .oneshot(request_with_api_key("GET", "/scores?game_hex_id=abc123", None))
             .await
             .unwrap();
 
         // Should be OK or NOT_FOUND (if game doesn't exist)
         assert!(response.status() == StatusCode::OK || response.status() == StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_get_global_scores_without_game_filter() {
+        std::env::set_var("LEADR_API_KEY", "test_api_key_123");
+        let app = create_test_app().await;
+
+        let response = app
+            .oneshot(request_with_api_key("GET", "/scores", None))
+            .await
+            .unwrap();
+
+        // Should return all scores across all games
+        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
@@ -411,7 +430,7 @@ mod score_endpoint_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?limit=10&offset=0",
+                "/scores?game_hex_id=abc123&limit=10",
                 None,
             ))
             .await
@@ -425,7 +444,7 @@ mod score_endpoint_tests {
         let app = create_test_app().await;
 
         let response = app
-            .oneshot(request_without_api_key("GET", "/games/abc123/scores"))
+            .oneshot(request_without_api_key("GET", "/scores?game_hex_id=abc123"))
             .await
             .unwrap();
 
@@ -561,6 +580,7 @@ mod score_endpoint_tests {
         });
 
         let score_data = json!({
+            "game_hex_id": "abc123",
             "score": "9999",
             "user_name": "ProPlayer",
             "user_id": "pro123",
@@ -570,7 +590,7 @@ mod score_endpoint_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "POST",
-                "/games/abc123/scores",
+                "/scores",
                 Some(&score_data.to_string()),
             ))
             .await
@@ -650,7 +670,7 @@ mod pagination_and_sorting_tests {
 
         // Default should be sorted by score descending
         let response = app
-            .oneshot(request_with_api_key("GET", "/games/abc123/scores", None))
+            .oneshot(request_with_api_key("GET", "/scores?game_hex_id=abc123", None))
             .await
             .unwrap();
 
@@ -665,7 +685,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?sort_by=date&order=asc",
+                "/scores?game_hex_id=abc123&sort_by=date&order=asc",
                 None,
             ))
             .await
@@ -682,7 +702,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?sort_by=user_name&order=desc",
+                "/scores?game_hex_id=abc123&sort_by=user_name&order=desc",
                 None,
             ))
             .await
@@ -699,7 +719,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?sort_by=score&order=desc",
+                "/scores?game_hex_id=abc123&sort_by=score&order=desc",
                 None,
             ))
             .await
@@ -716,7 +736,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?limit=5&sort_by=score",
+                "/scores?game_hex_id=abc123&limit=5&sort_by=score",
                 None,
             ))
             .await
@@ -733,7 +753,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET", 
-                "/games/abc123/scores?cursor=eyJpZCI6MTIzLCJzb3J0X3ZhbHVlIjoiMTAwMC41In0&sort_by=score&order=desc&limit=10",
+                "/scores?game_hex_id=abc123&cursor=eyJpZCI6MTIzLCJzb3J0X3ZhbHVlIjoiMTAwMC41In0&sort_by=score&order=desc&limit=10",
                 None
             ))
             .await
@@ -750,7 +770,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?sort_by=invalid_field",
+                "/scores?game_hex_id=abc123&sort_by=invalid_field",
                 None,
             ))
             .await
@@ -767,7 +787,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?order=invalid_order",
+                "/scores?game_hex_id=abc123&order=invalid_order",
                 None,
             ))
             .await
@@ -784,7 +804,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?cursor=invalid_cursor",
+                "/scores?game_hex_id=abc123&cursor=invalid_cursor",
                 None,
             ))
             .await
@@ -802,7 +822,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?sort_by=date&order=asc&limit=25",
+                "/scores?game_hex_id=abc123&sort_by=date&order=asc&limit=25",
                 None,
             ))
             .await
@@ -837,7 +857,7 @@ mod pagination_and_sorting_tests {
         let response = app
             .oneshot(request_with_api_key(
                 "GET",
-                "/games/abc123/scores?limit=1",
+                "/scores?game_hex_id=abc123&limit=1",
                 None,
             ))
             .await
@@ -856,7 +876,7 @@ mod pagination_and_sorting_tests {
         let app = create_test_app().await;
 
         // Test combination of all query parameters
-        let complex_query = "/games/abc123/scores?sort_by=score&order=desc&limit=15&cursor=eyJpZCI6NDU2LCJzb3J0X3ZhbHVlIjoiMjAwMC4wIn0";
+        let complex_query = "/scores?game_hex_id=abc123&sort_by=score&order=desc&limit=15&cursor=eyJpZCI6NDU2LCJzb3J0X3ZhbHVlIjoiMjAwMC4wIn0";
 
         let response = app
             .oneshot(request_with_api_key("GET", complex_query, None))

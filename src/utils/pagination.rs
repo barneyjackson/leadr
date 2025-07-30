@@ -45,6 +45,33 @@ pub struct ScoreSortParams {
     pub order: Option<SortOrder>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScoreQueryParams {
+    pub game_hex_id: Option<String>,
+    pub cursor: Option<String>,
+    pub limit: Option<u32>,
+    pub sort_by: Option<ScoreSortField>,
+    pub order: Option<SortOrder>,
+}
+
+impl ScoreQueryParams {
+    #[must_use]
+    pub fn to_pagination_params(&self) -> PaginationParams {
+        PaginationParams {
+            cursor: self.cursor.clone(),
+            limit: self.limit,
+        }
+    }
+
+    #[must_use]
+    pub fn to_sort_params(&self) -> ScoreSortParams {
+        ScoreSortParams {
+            sort_by: self.sort_by.clone(),
+            order: self.order.clone(),
+        }
+    }
+}
+
 impl PaginationParams {
     #[must_use]
     pub fn new(cursor: Option<String>, limit: Option<u32>) -> Self {

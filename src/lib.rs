@@ -25,14 +25,8 @@ pub fn create_app(pool: DbPool) -> Router {
         .route("/games", post(handlers::game::create_game))
         .route("/games/:hex_id", get(handlers::game::get_game))
         .route("/games/:hex_id", put(handlers::game::update_game))
-        .route(
-            "/games/:game_hex_id/scores",
-            get(handlers::score::list_scores),
-        )
-        .route(
-            "/games/:game_hex_id/scores",
-            post(handlers::score::create_score),
-        )
+        .route("/scores", get(handlers::score::list_scores))
+        .route("/scores", post(handlers::score::create_score))
         .route("/scores/:id", get(handlers::score::get_score))
         .route("/scores/:id", put(handlers::score::update_score))
         .layer(middleware::from_fn(api_key_middleware));

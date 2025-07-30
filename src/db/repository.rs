@@ -566,6 +566,112 @@ impl ScoreRepository {
         Ok(response)
     }
 
+    /// List all scores across all games with pagination and sorting
+    ///
+    /// # Errors
+    /// Returns `ApiError::ValidationError` if the cursor is invalid.
+    /// Returns `ApiError::DatabaseError` if the database operation fails.
+    ///
+    /// # Panics
+    /// Does not panic under normal operation.
+    pub async fn list_all(
+        pool: &SqlitePool,
+        pagination: PaginationParams,
+        sort_params: ScoreSortParams,
+    ) -> Result<PaginatedResponse<Score>> {
+        let limit = pagination.get_limit();
+        let fetch_limit = i64::from(limit + 1);
+        let sort_field = sort_params.get_cursor_field();
+
+        let scores = if let Some(cursor_str) = &pagination.cursor {
+            let cursor = decode_score_cursor(cursor_str)
+                .map_err(|e| ApiError::ValidationError(format!("Invalid cursor: {e}")))?;
+
+            // Build dynamic query based on sort parameters
+            let order_clause = sort_params.to_sql_order_clause();
+            let comparison_op = match sort_params.get_sort_order() {
+                SortOrder::Ascending => ">",
+                SortOrder::Descending => "<",
+            };
+
+            let query = format!(
+                r"
+                SELECT id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
+                FROM score 
+                WHERE deleted_at IS NULL 
+                AND ({sort_field} {comparison_op} ?1 OR ({sort_field} = ?1 AND id > ?2))
+                ORDER BY {order_clause}, id
+                LIMIT ?3
+                "
+            );
+
+            let score_rows = sqlx::query(&query)
+                .bind(&cursor.sort_value)
+                .bind(cursor.id)
+                .bind(fetch_limit)
+                .fetch_all(pool)
+                .await?;
+
+            score_rows
+                .into_iter()
+                .map(|row| {
+                    Score::from(ScoreRow {
+                        id: row.get("id"),
+                        game_hex_id: row.get("game_hex_id"),
+                        score: row.get("score"),
+                        score_val: row.get("score_val"),
+                        user_name: row.get("user_name"),
+                        user_id: row.get("user_id"),
+                        extra: row.get("extra"),
+                        submitted_at: row.get("submitted_at"),
+                        deleted_at: row.get("deleted_at"),
+                    })
+                })
+                .collect()
+        } else {
+            let order_clause = sort_params.to_sql_order_clause();
+            let query = format!(
+                r"
+                SELECT id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
+                FROM score 
+                WHERE deleted_at IS NULL
+                ORDER BY {order_clause}, id
+                LIMIT ?1
+                "
+            );
+
+            let score_rows = sqlx::query(&query)
+                .bind(fetch_limit)
+                .fetch_all(pool)
+                .await?;
+
+            score_rows
+                .into_iter()
+                .map(|row| {
+                    Score::from(ScoreRow {
+                        id: row.get("id"),
+                        game_hex_id: row.get("game_hex_id"),
+                        score: row.get("score"),
+                        score_val: row.get("score_val"),
+                        user_name: row.get("user_name"),
+                        user_id: row.get("user_id"),
+                        extra: row.get("extra"),
+                        submitted_at: row.get("submitted_at"),
+                        deleted_at: row.get("deleted_at"),
+                    })
+                })
+                .collect()
+        };
+
+        let response =
+            PaginatedResponse::from_query_results(scores, limit, pagination.cursor, |score| {
+                let cursor = ScoreCursor::from_score(score, sort_field);
+                encode_score_cursor(&cursor).ok()
+            });
+
+        Ok(response)
+    }
+
     /// Update a score
     ///
     /// # Errors

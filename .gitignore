@@ -5,7 +5,7 @@ Cargo.lock
 # Database
 *.db
 *.db-shm
-*.db-wal/
+*.db-wal
 
 # SQLx - uncomment during active development if causing merge conflicts
 .sqlx/

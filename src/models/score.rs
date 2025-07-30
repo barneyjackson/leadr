@@ -49,7 +49,6 @@ impl From<ScoreRow> for Score {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateScore {
-    #[serde(skip_deserializing, default = "String::new")]
     pub game_hex_id: String,
     pub score: String,          // Changed to String
     pub score_val: Option<f64>, // Renamed from score_num
