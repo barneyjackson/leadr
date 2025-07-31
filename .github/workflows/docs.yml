@@ -91,13 +91,7 @@ jobs:
           cat > docs/vercel.json << 'EOF'
           {
             "version": 2,
-            "public": true,
-            "builds": [
-              {
-                "src": "**",
-                "use": "@vercel/static"
-              }
-            ]
+            "public": true
           }
           EOF
           
@@ -108,5 +102,4 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./docs
-          vercel-args: '--prod'
+          vercel-args: '--prod ./docs'
