@@ -48,7 +48,7 @@ All requests require the `leadr-api-key` header with your configured API key.
 
 ### API Documentation
 
-- **📖 Online Documentation**: [https://barneyjackson.github.io/leadr/](https://barneyjackson.github.io/leadr/) (GitHub Pages)
+- **📖 Online Documentation**: [https://leadr-docs.vercel.app/](https://leadr-docs.vercel.app/) (Vercel)
 - **🔧 Interactive Testing**: When running locally, visit `/swagger-ui` for interactive API documentation
 
 The documentation is automatically generated from the code and updated on every push to main.

@@ -9,12 +9,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
 
 jobs:
   generate-docs:
@@ -87,24 +81,47 @@ jobs:
           </html>
           EOF
           
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-        
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './docs'
+      - name: Create vercel.json
+        run: |
+          cat > docs/vercel.json << 'EOF'
+          {
+            "version": 2,
+            "public": true,
+            "builds": [
+              {
+                "src": "**",
+                "use": "@vercel/static"
+              }
+            ]
+          }
+          EOF
 
-  deploy:
+  deploy-to-vercel:
     needs: generate-docs
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: production
+      url: https://leadr-docs.vercel.app
       
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Download docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: ./dist
+          
+      - name: Extract artifact
+        run: |
+          mkdir -p ./docs
+          tar -xf ./dist/artifact.tar -C ./docs --strip-components=1
+          
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./docs
+          vercel-args: '--prod'

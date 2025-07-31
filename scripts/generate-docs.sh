@@ -81,7 +81,7 @@ echo "   Option 1: python3 -m http.server 8000 --directory docs"
 echo "   Option 2: npx serve docs"
 echo "   Then open: http://localhost:8000"
 echo ""
-echo "🌐 Will be available on GitHub Pages at: https://barneyjackson.github.io/leadr/"
+echo "🌐 Will be available on Vercel at: https://leadr-docs.vercel.app/"
 
 # Offer to start a local server
 read -p "🚀 Start local server now? (y/n): " -n 1 -r
