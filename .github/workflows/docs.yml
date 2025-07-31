@@ -30,7 +30,10 @@ jobs:
         uses: Swatinem/rust-cache@v2
         
       - name: Generate OpenAPI spec
-        run: cargo run --bin generate_openapi
+        run: |
+          mkdir -p docs
+          cargo run --bin generate_openapi
+          cp openapi.json docs/
         
       - name: Download and setup Swagger UI
         run: |
@@ -102,4 +105,5 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod ./docs'
+          working-directory: ./docs
+          vercel-args: '--prod'
