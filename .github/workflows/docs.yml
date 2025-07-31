@@ -30,10 +30,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         
       - name: Generate OpenAPI spec
-        run: |
-          mkdir -p docs
-          cargo run --bin generate_openapi
-          cp openapi.json docs/
+        run: cargo run --bin generate_openapi
         
       - name: Download and setup Swagger UI
         run: |
