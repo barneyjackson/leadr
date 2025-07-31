@@ -11,8 +11,13 @@ permissions:
   contents: read
 
 jobs:
-  generate-docs:
+  generate-and-deploy-docs:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    
+    environment:
+      name: production
+      url: https://leadr-docs.vercel.app
     
     steps:
       - name: Checkout code
@@ -95,29 +100,9 @@ jobs:
             ]
           }
           EOF
-
-  deploy-to-vercel:
-    needs: generate-docs
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    environment:
-      name: production
-      url: https://leadr-docs.vercel.app
-      
-    steps:
-      - name: Download docs artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: github-pages
-          path: ./dist
-          
-      - name: Extract artifact
-        run: |
-          mkdir -p ./docs
-          tar -xf ./dist/artifact.tar -C ./docs --strip-components=1
           
       - name: Deploy to Vercel
+        if: github.ref == 'refs/heads/main'
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
