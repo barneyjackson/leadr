@@ -1,5 +1,6 @@
 use sqlx::{sqlite::SqlitePool, Pool, Sqlite};
 
+pub mod provider;
 pub mod repository;
 pub mod seed;
 
@@ -69,3 +70,6 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), sqlx::Error> {
         .await
         .map_err(sqlx::Error::from)
 }
+
+// Re-export provider types for convenience
+pub use provider::{DatabaseProvider, SqliteProvider};

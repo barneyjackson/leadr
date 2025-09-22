@@ -25,6 +25,15 @@ pub enum ApiError {
 
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
+
+    #[error("Unsupported database: {database_type}")]
+    UnsupportedDatabase { database_type: String },
+
+    #[error("Database provider mismatch: expected {expected}, got {actual}")]
+    ProviderMismatch { expected: String, actual: String },
+
+    #[error("Connection pool error: {0}")]
+    ConnectionPool(String),
 }
 
 impl IntoResponse for ApiError {
@@ -41,6 +50,18 @@ impl IntoResponse for ApiError {
             }
             ApiError::ValidationError(ref msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.as_str()),
             ApiError::InvalidParameter(ref msg) => (StatusCode::BAD_REQUEST, msg.as_str()),
+            ApiError::UnsupportedDatabase { .. } => {
+                tracing::error!("Unsupported database error: {:?}", self);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database configuration error")
+            }
+            ApiError::ProviderMismatch { .. } => {
+                tracing::error!("Database provider mismatch: {:?}", self);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database configuration error")
+            }
+            ApiError::ConnectionPool(ref msg) => {
+                tracing::error!("Connection pool error: {}", msg);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database connection error")
+            }
         };
 
         let body = Json(json!({
