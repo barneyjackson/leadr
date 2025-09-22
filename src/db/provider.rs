@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{Database, Pool, Row};
+use sqlx::{Database, Row};
 use std::fmt::Debug;
 
 use crate::error::Result;

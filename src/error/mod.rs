@@ -48,10 +48,7 @@ impl IntoResponse for ApiError {
             }
             ApiError::Migration(err) => {
                 tracing::error!("Migration error: {:?}", err);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Database migration error",
-                )
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database migration error")
             }
             ApiError::NotFound => (StatusCode::NOT_FOUND, "Not found"),
             ApiError::BadRequest(ref msg) => (StatusCode::BAD_REQUEST, msg.as_str()),
