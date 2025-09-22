@@ -285,4 +285,17 @@ We follow test-driven development:
 
 ---
 
+## Future Work
+
+The following features are coming soon to leadr:
+
+- **Hosted leadr service** - The quickest way to get started, just sign up and integrate
+- **Game engine SDKs** - Simple integration tools for Unity, Unreal, Godot, and more
+- **Customisable hosted leaderboard pages** - Easy online visibility for your game's scores
+- **Automated cheat and spam detection** - One less thing for you to worry about
+- **SSO login** - Easy login for you and your players with Google, Steam, Discord, and more
+- Let us know what else you want!
+
+---
+
 *Built with ❤️ for the indie game development community*
