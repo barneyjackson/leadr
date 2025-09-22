@@ -17,8 +17,8 @@ use crate::error::Result;
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let provider = SqliteProvider::new();
-///     let pool = provider.create_pool("sqlite:./test.db").await?;
-///     provider.run_migrations(&pool).await?;
+///     let pool = SqliteProvider::create_pool("sqlite:./test.db").await?;
+///     SqliteProvider::run_migrations(&pool).await?;
 ///     Ok(())
 /// }
 /// ```
