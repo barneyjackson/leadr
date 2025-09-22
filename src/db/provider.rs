@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{Database, Row};
+use sqlx::{Database, Pool, Row};
 use std::fmt::Debug;
 
 use crate::error::Result;
@@ -17,8 +17,8 @@ use crate::error::Result;
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let provider = SqliteProvider::new();
-///     let pool = SqliteProvider::create_pool("sqlite:./test.db").await?;
-///     SqliteProvider::run_migrations(&pool).await?;
+///     let pool = provider.create_pool("sqlite:./test.db").await?;
+///     provider.run_migrations(&pool).await?;
 ///     Ok(())
 /// }
 /// ```
@@ -68,7 +68,7 @@ pub trait DatabaseProvider: Send + Sync + Clone + Debug + 'static {
         &self,
         pool: &Self::Pool,
         query: &str,
-        params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)],
+        params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)]
     ) -> Result<Vec<Self::Row>>;
 
     /// Execute a query and return a scalar result.
@@ -86,7 +86,7 @@ pub trait DatabaseProvider: Send + Sync + Clone + Debug + 'static {
         &self,
         pool: &Self::Pool,
         query: &str,
-        params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)],
+        params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)]
     ) -> Result<T>
     where
         T: for<'r> sqlx::Decode<'r, Self::DB> + sqlx::Type<Self::DB> + Send + Unpin;
@@ -150,7 +150,9 @@ impl DatabaseProvider for SqliteProvider {
     async fn run_migrations(pool: &Self::Pool) -> Result<()> {
         tracing::info!("Running SQLite migrations...");
 
-        sqlx::migrate!("./migrations").run(pool).await?;
+        sqlx::migrate!("./migrations")
+            .run(pool)
+            .await?;
 
         tracing::info!("SQLite migrations completed successfully");
         Ok(())
@@ -160,11 +162,13 @@ impl DatabaseProvider for SqliteProvider {
         &self,
         pool: &Self::Pool,
         query: &str,
-        _params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)],
+        _params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)]
     ) -> Result<Vec<Self::Row>> {
         // For now, implement basic query execution
         // Full parameter binding will be implemented in repository layer
-        let rows = sqlx::query(query).fetch_all(pool).await?;
+        let rows = sqlx::query(query)
+            .fetch_all(pool)
+            .await?;
 
         Ok(rows)
     }
@@ -173,14 +177,16 @@ impl DatabaseProvider for SqliteProvider {
         &self,
         pool: &Self::Pool,
         query: &str,
-        _params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)],
+        _params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)]
     ) -> Result<T>
     where
         T: for<'r> sqlx::Decode<'r, Self::DB> + sqlx::Type<Self::DB> + Send + Unpin,
     {
         // For now, implement basic scalar query execution
         // Full parameter binding will be implemented in repository layer
-        let result: T = sqlx::query_scalar(query).fetch_one(pool).await?;
+        let result: T = sqlx::query_scalar(query)
+            .fetch_one(pool)
+            .await?;
 
         Ok(result)
     }
@@ -236,9 +242,7 @@ mod tests {
         let pool = SqliteProvider::create_pool(&db_url).await.unwrap();
 
         // Test basic query execution
-        let rows = provider
-            .execute_query(&pool, "SELECT 1 as test_col", &[])
-            .await;
+        let rows = provider.execute_query(&pool, "SELECT 1 as test_col", &[]).await;
         assert!(rows.is_ok());
     }
 
@@ -251,10 +255,7 @@ mod tests {
         let pool = SqliteProvider::create_pool(&db_url).await.unwrap();
 
         // Test scalar query execution
-        let result: i32 = provider
-            .execute_scalar(&pool, "SELECT 42", &[])
-            .await
-            .unwrap();
+        let result: i32 = provider.execute_scalar(&pool, "SELECT 42", &[]).await.unwrap();
         assert_eq!(result, 42);
     }
 }

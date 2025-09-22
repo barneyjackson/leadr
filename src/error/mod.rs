@@ -62,24 +62,15 @@ impl IntoResponse for ApiError {
             ApiError::InvalidParameter(ref msg) => (StatusCode::BAD_REQUEST, msg.as_str()),
             ApiError::UnsupportedDatabase { .. } => {
                 tracing::error!("Unsupported database error: {:?}", self);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Database configuration error",
-                )
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database configuration error")
             }
             ApiError::ProviderMismatch { .. } => {
                 tracing::error!("Database provider mismatch: {:?}", self);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Database configuration error",
-                )
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database configuration error")
             }
             ApiError::ConnectionPool(ref msg) => {
                 tracing::error!("Connection pool error: {}", msg);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Database connection error",
-                )
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database connection error")
             }
         };
 
