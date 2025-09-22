@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use utoipa::{ToSchema, IntoParams};
+use utoipa::{IntoParams, ToSchema};
 
 pub const DEFAULT_PAGE_SIZE: u32 = 25;
 pub const MAX_PAGE_SIZE: u32 = 100;
@@ -93,7 +93,8 @@ impl PaginationParams {
         std::env::var("LEADR_PAGE_SIZE")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or(DEFAULT_PAGE_SIZE).clamp(1, MAX_PAGE_SIZE)
+            .unwrap_or(DEFAULT_PAGE_SIZE)
+            .clamp(1, MAX_PAGE_SIZE)
     }
 }
 
@@ -231,8 +232,7 @@ pub mod cursor {
         let bytes = URL_SAFE_NO_PAD
             .decode(cursor)
             .map_err(|e| format!("Failed to decode cursor: {e}"))?;
-        let json =
-            String::from_utf8(bytes).map_err(|e| format!("Invalid UTF-8 in cursor: {e}"))?;
+        let json = String::from_utf8(bytes).map_err(|e| format!("Invalid UTF-8 in cursor: {e}"))?;
         serde_json::from_str(&json).map_err(|e| format!("Failed to deserialize cursor: {e}"))
     }
 
@@ -246,8 +246,7 @@ pub mod cursor {
         let bytes = URL_SAFE_NO_PAD
             .decode(cursor)
             .map_err(|e| format!("Failed to decode cursor: {e}"))?;
-        let json =
-            String::from_utf8(bytes).map_err(|e| format!("Invalid UTF-8 in cursor: {e}"))?;
+        let json = String::from_utf8(bytes).map_err(|e| format!("Invalid UTF-8 in cursor: {e}"))?;
         serde_json::from_str(&json).map_err(|e| format!("Failed to deserialize cursor: {e}"))
     }
 

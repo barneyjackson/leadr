@@ -11,12 +11,15 @@ use crate::{
         DbPool,
     },
     error::ApiError,
-    models::{score::{CreateScore, Score, UpdateScore}, PaginatedResponse},
+    models::{
+        score::{CreateScore, Score, UpdateScore},
+        PaginatedResponse,
+    },
     utils::pagination::ScoreQueryParams,
 };
 
 /// Creates a new score for a specific game.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
 /// Returns `ApiError::NotFound` if the game does not exist.
@@ -59,7 +62,7 @@ pub async fn create_score(
 }
 
 /// Lists scores with optional game filtering, pagination and sorting support.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::ValidationError` if pagination or sort parameters are invalid.
 /// Returns `ApiError::InvalidParameter` if the game hex_id format is invalid.
@@ -94,15 +97,26 @@ pub async fn list_scores(
 
     // If game_hex_id is provided, list scores for that game, otherwise list all scores
     let result = if let Some(ref game_hex_id) = query_params.game_hex_id {
-        ScoreRepository::list_by_game(&pool, game_hex_id, query_params.to_pagination_params(), query_params.to_sort_params()).await?
+        ScoreRepository::list_by_game(
+            &pool,
+            game_hex_id,
+            query_params.to_pagination_params(),
+            query_params.to_sort_params(),
+        )
+        .await?
     } else {
-        ScoreRepository::list_all(&pool, query_params.to_pagination_params(), query_params.to_sort_params()).await?
+        ScoreRepository::list_all(
+            &pool,
+            query_params.to_pagination_params(),
+            query_params.to_sort_params(),
+        )
+        .await?
     };
     Ok(Json(result))
 }
 
 /// Retrieves a specific score by its ID.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::NotFound` if no score exists with the given ID.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
@@ -132,7 +146,7 @@ pub async fn get_score(
 }
 
 /// Updates an existing score.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
 /// Returns `ApiError::NotFound` if no score exists with the given ID.
@@ -167,7 +181,7 @@ pub async fn update_score(
 }
 
 /// Soft deletes a score (marks as deleted without removing from database).
-/// 
+///
 /// # Errors
 /// Returns `ApiError::NotFound` if no score exists with the given ID.
 /// Returns `ApiError::DatabaseError` if the database operation fails.

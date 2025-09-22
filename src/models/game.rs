@@ -78,19 +78,16 @@ impl Game {
     }
 
     /// Normalizes and validates a hex ID. Converts to lowercase and validates format.
-    /// 
+    ///
     /// # Errors
     /// Returns an error string if the hex ID is not exactly 6 characters or contains invalid characters.
     pub fn normalize_and_validate_hex_id(hex_id: &str) -> Result<String, String> {
         if hex_id.len() != 6 {
             return Err("Hex ID must be exactly 6 characters".to_string());
         }
-        
+
         let normalized = hex_id.to_lowercase();
-        if !normalized
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric())
-        {
+        if !normalized.chars().all(|c| c.is_ascii_alphanumeric()) {
             return Err(
                 "Hex ID must contain only alphanumeric characters (0-9, a-z, A-Z)".to_string(),
             );
@@ -99,7 +96,7 @@ impl Game {
     }
 
     /// Validates that a hex ID has the correct format (6 lowercase alphanumeric characters).
-    /// 
+    ///
     /// # Errors
     /// Returns an error string if the hex ID is not exactly 6 characters or contains invalid characters.
     pub fn validate_hex_id(hex_id: &str) -> Result<(), String> {
@@ -118,7 +115,7 @@ impl Game {
     }
 
     /// Validates that a game name meets the requirements.
-    /// 
+    ///
     /// # Errors
     /// Returns an error string if the name is empty or exceeds 255 characters.
     pub fn validate_name(name: &str) -> Result<(), String> {

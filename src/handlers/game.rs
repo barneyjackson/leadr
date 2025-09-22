@@ -9,12 +9,15 @@ use utoipa::OpenApi;
 use crate::{
     db::{repository::GameRepository, DbPool},
     error::ApiError,
-    models::{game::{CreateGame, UpdateGame, Game}, PaginatedResponse},
+    models::{
+        game::{CreateGame, Game, UpdateGame},
+        PaginatedResponse,
+    },
     utils::pagination::PaginationParams,
 };
 
 /// Creates a new game.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::ValidationError` if the game name is invalid.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
@@ -42,7 +45,7 @@ pub async fn create_game(
 }
 
 /// Lists games with pagination support.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::ValidationError` if pagination parameters are invalid.
 /// Returns `ApiError::DatabaseError` if the database operation fails.
@@ -72,7 +75,7 @@ pub async fn list_games(
 }
 
 /// Retrieves a specific game by its hex ID.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::InvalidParameter` if the hex_id format is invalid.
 /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
@@ -104,7 +107,7 @@ pub async fn get_game(
 }
 
 /// Updates an existing game.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::InvalidParameter` if the hex_id format or name is invalid.
 /// Returns `ApiError::NotFound` if no game exists with the given hex_id.
@@ -139,7 +142,7 @@ pub async fn update_game(
 }
 
 /// Soft deletes a game (marks as deleted without removing from database).
-/// 
+///
 /// # Errors
 /// Returns `ApiError::InvalidParameter` if the hex_id format is invalid.
 /// Returns `ApiError::NotFound` if no game exists with the given hex_id.

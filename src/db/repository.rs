@@ -68,14 +68,15 @@ impl GameRepository {
     /// Returns `ApiError::ValidationError` if the game name or hex_id is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     pub async fn create_with_hex_id(
-        pool: &SqlitePool, 
-        create_data: CreateGame, 
+        pool: &SqlitePool,
+        create_data: CreateGame,
         hex_id: String,
-        created_at: chrono::DateTime<Utc>
+        created_at: chrono::DateTime<Utc>,
     ) -> Result<Game> {
         // Validate inputs and normalize hex_id
         Game::validate_name(&create_data.name)?;
-        let normalized_hex_id = Game::normalize_and_validate_hex_id(&hex_id).map_err(ApiError::InvalidParameter)?;
+        let normalized_hex_id =
+            Game::normalize_and_validate_hex_id(&hex_id).map_err(ApiError::InvalidParameter)?;
 
         let created_at_naive = created_at.naive_utc();
         let updated_at_naive = created_at.naive_utc();
@@ -469,9 +470,9 @@ impl ScoreRepository {
     /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     pub async fn create_with_timestamp(
-        pool: &SqlitePool, 
+        pool: &SqlitePool,
         create_data: CreateScore,
-        submitted_at: chrono::DateTime<Utc>
+        submitted_at: chrono::DateTime<Utc>,
     ) -> Result<Score> {
         // Validate inputs
         Score::validate_user_name(&create_data.user_name)?;
