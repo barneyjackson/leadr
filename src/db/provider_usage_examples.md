@@ -19,10 +19,25 @@ let pool = SqliteProvider::create_pool("sqlite:./leadr.db").await?;
 SqliteProvider::run_migrations(&pool).await?;
 ```
 
+### Creating a PostgreSQL Provider
+
+```rust
+use leadr_api::db::provider::{DatabaseProvider, PostgresProvider};
+
+// Create a new PostgreSQL provider instance
+let provider = PostgresProvider::new();
+
+// Create a connection pool with optimized settings
+let pool = PostgresProvider::create_pool("postgresql://user:password@localhost/leadr").await?;
+
+// Run migrations
+PostgresProvider::run_migrations(&pool).await?;
+```
+
 ### Using the Provider in Repositories
 
 ```rust
-use leadr_api::db::provider::{DatabaseProvider, SqliteProvider};
+use leadr_api::db::provider::{DatabaseProvider, SqliteProvider, PostgresProvider};
 
 // Example: Generic repository function that works with any provider
 async fn count_games<P: DatabaseProvider>(
@@ -39,9 +54,14 @@ async fn count_games<P: DatabaseProvider>(
 }
 
 // Usage with SQLite
-let provider = SqliteProvider::new();
-let pool = SqliteProvider::create_pool("sqlite:./leadr.db").await?;
-let game_count = count_games(&provider, &pool).await?;
+let sqlite_provider = SqliteProvider::new();
+let sqlite_pool = SqliteProvider::create_pool("sqlite:./leadr.db").await?;
+let sqlite_count = count_games(&sqlite_provider, &sqlite_pool).await?;
+
+// Usage with PostgreSQL
+let postgres_provider = PostgresProvider::new();
+let postgres_pool = PostgresProvider::create_pool("postgresql://user:password@localhost/leadr").await?;
+let postgres_count = count_games(&postgres_provider, &postgres_pool).await?;
 ```
 
 ## Migration from Direct SQLx Usage
@@ -63,14 +83,19 @@ let games = sqlx::query_as!(
 ### After (Provider Abstraction)
 
 ```rust
-use leadr_api::db::provider::{DatabaseProvider, SqliteProvider};
+use leadr_api::db::provider::{DatabaseProvider, SqliteProvider, PostgresProvider};
 
-let provider = SqliteProvider::new();
-let pool = SqliteProvider::create_pool("sqlite:./leadr.db").await?;
+// SQLite
+let sqlite_provider = SqliteProvider::new();
+let sqlite_pool = SqliteProvider::create_pool("sqlite:./leadr.db").await?;
 
-// Use provider methods for database-agnostic operations
-let rows = provider.execute_query(
-    &pool,
+// PostgreSQL
+let postgres_provider = PostgresProvider::new();
+let postgres_pool = PostgresProvider::create_pool("postgresql://user:password@localhost/leadr").await?;
+
+// Use provider methods for database-agnostic operations (works with either)
+let rows = sqlite_provider.execute_query(
+    &sqlite_pool,
     "SELECT * FROM game WHERE deleted_at IS NULL",
     &[]
 ).await?;
@@ -83,17 +108,29 @@ The provider abstraction includes enhanced error handling:
 ```rust
 use leadr_api::error::ApiError;
 
+// SQLite error handling
 match SqliteProvider::create_pool("invalid://url").await {
     Ok(pool) => {
         // Success - continue with operations
     },
     Err(ApiError::Database(err)) => {
         // Handle database connection errors
-        eprintln!("Database connection failed: {}", err);
+        eprintln!("SQLite connection failed: {}", err);
     },
-    Err(ApiError::ConnectionPool(msg)) => {
-        // Handle connection pool errors
-        eprintln!("Pool configuration error: {}", msg);
+    Err(other) => {
+        // Handle other error types
+        eprintln!("Unexpected error: {}", other);
+    }
+}
+
+// PostgreSQL error handling
+match PostgresProvider::create_pool("invalid://url").await {
+    Ok(pool) => {
+        // Success - continue with operations
+    },
+    Err(ApiError::Database(err)) => {
+        // Handle database connection errors
+        eprintln!("PostgreSQL connection failed: {}", err);
     },
     Err(other) => {
         // Handle other error types
@@ -102,20 +139,23 @@ match SqliteProvider::create_pool("invalid://url").await {
 }
 ```
 
-## Future PostgreSQL Usage
+## PostgreSQL Usage
 
-When PostgreSQL support is added (LDR-33), the same interface will work:
+With PostgreSQL support now available (LDR-33), the same interface works seamlessly:
 
 ```rust
 use leadr_api::db::provider::{DatabaseProvider, PostgresProvider};
 
-// Same interface, different implementation
+// Same interface, PostgreSQL implementation
 let provider = PostgresProvider::new();
-let pool = PostgresProvider::create_pool("postgresql://...").await?;
+let pool = PostgresProvider::create_pool("postgresql://user:password@localhost/leadr").await?;
 PostgresProvider::run_migrations(&pool).await?;
 
 // All repository functions work unchanged
 let game_count = count_games(&provider, &pool).await?;
+
+// PostgreSQL supports Row-Level Security for multi-tenancy
+assert!(provider.supports_row_level_security()); // true
 ```
 
 ## Key Benefits

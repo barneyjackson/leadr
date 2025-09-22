@@ -194,6 +194,114 @@ impl DatabaseProvider for SqliteProvider {
     }
 }
 
+/// PostgreSQL database provider implementation.
+///
+/// Provides PostgreSQL-specific optimizations including connection pooling
+/// tuned for high-performance multi-tenant scenarios and row-level security support.
+#[derive(Debug, Clone)]
+pub struct PostgresProvider;
+
+impl PostgresProvider {
+    /// Create a new PostgreSQL provider instance.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for PostgresProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl DatabaseProvider for PostgresProvider {
+    type DB = sqlx::Postgres;
+    type Pool = sqlx::Pool<sqlx::Postgres>;
+    type Row = sqlx::postgres::PgRow;
+
+    async fn create_pool(database_url: &str) -> Result<Self::Pool> {
+        use sqlx::postgres::PgPoolOptions;
+        use std::time::Duration;
+
+        tracing::info!(
+            "Creating PostgreSQL connection pool for: {}",
+            // Mask sensitive parts of the URL for logging
+            database_url.split('@').last().unwrap_or("***")
+        );
+
+        // Configure PostgreSQL connection pool with optimizations
+        let pool = PgPoolOptions::new()
+            .max_connections(20) // Higher concurrency for PostgreSQL
+            .min_connections(5) // Keep minimum connections warm
+            .acquire_timeout(Duration::from_secs(30))
+            .idle_timeout(Duration::from_secs(300)) // 5 minutes
+            .max_lifetime(Duration::from_secs(1800)) // 30 minutes
+            .test_before_acquire(true) // Validate connections
+            .connect(database_url)
+            .await
+            .map_err(|e| crate::error::ApiError::Database(e))?;
+
+        tracing::info!("PostgreSQL connection pool created successfully");
+        Ok(pool)
+    }
+
+    async fn run_migrations(pool: &Self::Pool) -> Result<()> {
+        tracing::info!("Running PostgreSQL migrations...");
+
+        sqlx::migrate!("./migrations")
+            .run(pool)
+            .await
+            .map_err(|e| crate::error::ApiError::Migration(e))?;
+
+        tracing::info!("PostgreSQL migrations completed successfully");
+        Ok(())
+    }
+
+    async fn execute_query(
+        &self,
+        pool: &Self::Pool,
+        query: &str,
+        _params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)],
+    ) -> Result<Vec<Self::Row>> {
+        // For now, implement basic query execution
+        // Full parameter binding will be implemented in repository layer
+        let rows = sqlx::query(query)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| crate::error::ApiError::Database(e))?;
+
+        Ok(rows)
+    }
+
+    async fn execute_scalar<T>(
+        &self,
+        pool: &Self::Pool,
+        query: &str,
+        _params: &[&(dyn sqlx::Encode<Self::DB> + Send + Sync)],
+    ) -> Result<T>
+    where
+        T: for<'r> sqlx::Decode<'r, Self::DB> + sqlx::Type<Self::DB> + Send + Unpin,
+    {
+        // For now, implement basic scalar query execution
+        // Full parameter binding will be implemented in repository layer
+        let result: T = sqlx::query_scalar(query)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| crate::error::ApiError::Database(e))?;
+
+        Ok(result)
+    }
+
+    fn database_name(&self) -> &'static str {
+        "PostgreSQL"
+    }
+
+    fn supports_row_level_security(&self) -> bool {
+        true
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -256,5 +364,33 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result, 42);
+    }
+
+    #[tokio::test]
+    async fn test_postgres_provider_creation() {
+        let provider = PostgresProvider::new();
+        assert_eq!(provider.database_name(), "PostgreSQL");
+        assert!(provider.supports_row_level_security());
+    }
+
+    #[tokio::test]
+    async fn test_postgres_provider_default() {
+        let provider = PostgresProvider::default();
+        assert_eq!(provider.database_name(), "PostgreSQL");
+    }
+
+    // Note: Actual PostgreSQL connection tests would require a running PostgreSQL instance
+    // These tests focus on the provider structure and basic functionality
+    #[tokio::test]
+    async fn test_postgres_invalid_connection_string() {
+        // Test that invalid connection strings are properly handled
+        let result = PostgresProvider::create_pool("invalid://connection/string").await;
+        assert!(result.is_err());
+
+        // Verify it returns the expected error type
+        match result {
+            Err(crate::error::ApiError::Database(_)) => {}
+            _ => panic!("Expected Database error for invalid connection string"),
+        }
     }
 }

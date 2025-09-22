@@ -11,7 +11,7 @@ tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 
 # Database
-sqlx = { version = "0.8.1", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+sqlx = { version = "0.8.1", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "postgres"] }
 async-trait = "0.1"
 
 # Serialization

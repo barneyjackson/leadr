@@ -75,4 +75,4 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), sqlx::Error> {
 }
 
 // Re-export provider types for convenience
-pub use provider::{DatabaseProvider, SqliteProvider};
+pub use provider::{DatabaseProvider, PostgresProvider, SqliteProvider};
