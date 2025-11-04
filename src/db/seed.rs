@@ -19,7 +19,9 @@ struct CsvRow {
     game_name: String,
     game_description: Option<String>,
     game_created_at: String,
+    #[allow(dead_code)]
     game_updated_at: String,
+    #[allow(dead_code)]
     game_deleted_at: Option<String>,
 
     // Score fields - all optional for games without scores
@@ -30,7 +32,9 @@ struct CsvRow {
     user_id: Option<String>,
     extra: Option<String>,
     score_submitted_at: Option<String>,
+    #[allow(dead_code)]
     score_updated_at: Option<String>,
+    #[allow(dead_code)]
     score_deleted_at: Option<String>,
 }
 

@@ -4,14 +4,12 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use utoipa::OpenApi;
 
 use crate::{
     db::{repository::GameRepository, DbPool},
     error::ApiError,
     models::{
-        game::{CreateGame, Game, UpdateGame},
-        PaginatedResponse,
+        game::{CreateGame, UpdateGame},
     },
     utils::pagination::PaginationParams,
 };

@@ -13,7 +13,6 @@ use crate::{
     error::ApiError,
     models::{
         score::{CreateScore, Score, UpdateScore},
-        PaginatedResponse,
     },
     utils::pagination::ScoreQueryParams,
 };
