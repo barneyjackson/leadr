@@ -17,8 +17,8 @@ struct ExportRow {
     game_created_at: String,
     game_updated_at: String,
     game_deleted_at: Option<String>,
-    
-    // Score fields  
+
+    // Score fields
     score_id: i64,
     score_value: String,
     score_val: f64,
@@ -32,7 +32,7 @@ struct ExportRow {
 
 /// Exports all game and score data as a CSV file for backup purposes.
 /// Returns denormalized data with one row per score, including all game information.
-/// 
+///
 /// # Errors
 /// Returns `ApiError::Database` if the database query fails.
 /// Returns `ApiError::ValidationError` if CSV serialization fails.
@@ -72,7 +72,7 @@ pub async fn export_data(State(pool): State<DbPool>) -> Result<impl IntoResponse
         FROM games g
         LEFT JOIN scores s ON g.hex_id = s.game_hex_id
         ORDER BY g.created_at, s.submitted_at
-        "#
+        "#,
     )
     .fetch_all(&pool)
     .await?;
@@ -87,28 +87,46 @@ pub async fn export_data(State(pool): State<DbPool>) -> Result<impl IntoResponse
             game_hex_id: row.get("game_hex_id"),
             game_name: row.get("game_name"),
             game_description: row.get("game_description"),
-            game_created_at: row.get::<chrono::DateTime<chrono::Utc>, _>("game_created_at").to_rfc3339(),
-            game_updated_at: row.get::<chrono::DateTime<chrono::Utc>, _>("game_updated_at").to_rfc3339(),
-            game_deleted_at: row.get::<Option<chrono::DateTime<chrono::Utc>>, _>("game_deleted_at").map(|dt| dt.to_rfc3339()),
+            game_created_at: row
+                .get::<chrono::DateTime<chrono::Utc>, _>("game_created_at")
+                .to_rfc3339(),
+            game_updated_at: row
+                .get::<chrono::DateTime<chrono::Utc>, _>("game_updated_at")
+                .to_rfc3339(),
+            game_deleted_at: row
+                .get::<Option<chrono::DateTime<chrono::Utc>>, _>("game_deleted_at")
+                .map(|dt| dt.to_rfc3339()),
             score_id: row.get::<Option<i64>, _>("score_id").unwrap_or(0),
-            score_value: row.get::<Option<String>, _>("score_value").unwrap_or_default(),
+            score_value: row
+                .get::<Option<String>, _>("score_value")
+                .unwrap_or_default(),
             score_val: row.get::<Option<f64>, _>("score_val").unwrap_or(0.0),
-            user_name: row.get::<Option<String>, _>("user_name").unwrap_or_default(),
+            user_name: row
+                .get::<Option<String>, _>("user_name")
+                .unwrap_or_default(),
             user_id: row.get::<Option<String>, _>("user_id").unwrap_or_default(),
             extra: row.get::<Option<String>, _>("extra").unwrap_or_default(),
-            score_submitted_at: row.get::<Option<chrono::DateTime<chrono::Utc>>, _>("score_submitted_at").map(|dt| dt.to_rfc3339()).unwrap_or_default(),
-            score_updated_at: row.get::<Option<chrono::DateTime<chrono::Utc>>, _>("score_updated_at").map(|dt| dt.to_rfc3339()).unwrap_or_default(),
-            score_deleted_at: row.get::<Option<chrono::DateTime<chrono::Utc>>, _>("score_deleted_at").map(|dt| dt.to_rfc3339()),
+            score_submitted_at: row
+                .get::<Option<chrono::DateTime<chrono::Utc>>, _>("score_submitted_at")
+                .map(|dt| dt.to_rfc3339())
+                .unwrap_or_default(),
+            score_updated_at: row
+                .get::<Option<chrono::DateTime<chrono::Utc>>, _>("score_updated_at")
+                .map(|dt| dt.to_rfc3339())
+                .unwrap_or_default(),
+            score_deleted_at: row
+                .get::<Option<chrono::DateTime<chrono::Utc>>, _>("score_deleted_at")
+                .map(|dt| dt.to_rfc3339()),
         };
-        
-        writer.serialize(&export_row).map_err(|e| {
-            ApiError::ValidationError(format!("Failed to serialize CSV row: {e}"))
-        })?;
+
+        writer
+            .serialize(&export_row)
+            .map_err(|e| ApiError::ValidationError(format!("Failed to serialize CSV row: {e}")))?;
     }
 
-    writer.flush().map_err(|e| {
-        ApiError::ValidationError(format!("Failed to flush CSV writer: {e}"))
-    })?;
+    writer
+        .flush()
+        .map_err(|e| ApiError::ValidationError(format!("Failed to flush CSV writer: {e}")))?;
 
     // Drop the writer to release the borrow on csv_output
     drop(writer);

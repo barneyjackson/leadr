@@ -11,7 +11,7 @@ use tower::util::ServiceExt;
 async fn create_test_app() -> Router {
     // Set the API key environment variable before creating the app
     std::env::set_var("LEADR_API_KEY", "test_api_key_123");
-    
+
     let pool = db::create_pool("sqlite::memory:").await.unwrap();
     db::run_migrations(&pool).await.unwrap();
     create_app(pool)
@@ -159,21 +159,29 @@ mod game_endpoint_tests {
             .unwrap();
 
         assert_eq!(create_response.status(), StatusCode::CREATED);
-        
+
         // Extract the created game's hex_id from response
-        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX).await.unwrap();
+        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let created_game: serde_json::Value = serde_json::from_slice(&body).unwrap();
         let hex_id = created_game["hex_id"].as_str().unwrap();
 
         // Now try to retrieve it
         let response = app
-            .oneshot(request_with_api_key("GET", &format!("/games/{}", hex_id), None))
+            .oneshot(request_with_api_key(
+                "GET",
+                &format!("/games/{}", hex_id),
+                None,
+            ))
             .await
             .unwrap();
 
         let status = response.status();
         if status != StatusCode::OK {
-            let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+            let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap();
             let error_msg = String::from_utf8_lossy(&body);
             panic!("Expected 200 OK, got {} with body: {}", status, error_msg);
         }
@@ -240,9 +248,11 @@ mod game_endpoint_tests {
             .unwrap();
 
         assert_eq!(create_response.status(), StatusCode::CREATED);
-        
+
         // Extract the created game's hex_id from response
-        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX).await.unwrap();
+        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let created_game: serde_json::Value = serde_json::from_slice(&body).unwrap();
         let hex_id = created_game["hex_id"].as_str().unwrap();
 
@@ -284,15 +294,21 @@ mod game_endpoint_tests {
             .unwrap();
 
         assert_eq!(create_response.status(), StatusCode::CREATED);
-        
+
         // Extract the created game's hex_id from response
-        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX).await.unwrap();
+        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let created_game: serde_json::Value = serde_json::from_slice(&body).unwrap();
         let hex_id = created_game["hex_id"].as_str().unwrap();
 
         // Now try empty update
         let response = app
-            .oneshot(request_with_api_key("PUT", &format!("/games/{}", hex_id), Some("{}")))
+            .oneshot(request_with_api_key(
+                "PUT",
+                &format!("/games/{}", hex_id),
+                Some("{}"),
+            ))
             .await
             .unwrap();
 
@@ -321,15 +337,21 @@ mod game_endpoint_tests {
             .unwrap();
 
         assert_eq!(create_response.status(), StatusCode::CREATED);
-        
+
         // Extract the created game's hex_id from response
-        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX).await.unwrap();
+        let body = axum::body::to_bytes(create_response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let created_game: serde_json::Value = serde_json::from_slice(&body).unwrap();
         let hex_id = created_game["hex_id"].as_str().unwrap();
 
         // Now delete it
         let response = app
-            .oneshot(request_with_api_key("DELETE", &format!("/games/{}", hex_id), None))
+            .oneshot(request_with_api_key(
+                "DELETE",
+                &format!("/games/{}", hex_id),
+                None,
+            ))
             .await
             .unwrap();
 
@@ -485,7 +507,11 @@ mod score_endpoint_tests {
         let app = create_test_app().await;
 
         let response = app
-            .oneshot(request_with_api_key("GET", "/scores?game_hex_id=abc123", None))
+            .oneshot(request_with_api_key(
+                "GET",
+                "/scores?game_hex_id=abc123",
+                None,
+            ))
             .await
             .unwrap();
 
@@ -636,7 +662,10 @@ mod score_endpoint_tests {
             .unwrap();
 
         // Should be NOT_FOUND since score doesn't exist, or NO_CONTENT if it does
-        assert!(response.status() == StatusCode::NOT_FOUND || response.status() == StatusCode::NO_CONTENT);
+        assert!(
+            response.status() == StatusCode::NOT_FOUND
+                || response.status() == StatusCode::NO_CONTENT
+        );
     }
 
     #[tokio::test]
@@ -742,7 +771,11 @@ mod pagination_and_sorting_tests {
 
         // Default should be sorted by score descending
         let response = app
-            .oneshot(request_with_api_key("GET", "/scores?game_hex_id=abc123", None))
+            .oneshot(request_with_api_key(
+                "GET",
+                "/scores?game_hex_id=abc123",
+                None,
+            ))
             .await
             .unwrap();
 
@@ -956,14 +989,27 @@ mod pagination_and_sorting_tests {
             .unwrap();
 
         // Should return CSV file with proper headers, or at minimum not return METHOD_NOT_ALLOWED
-        assert!(response.status() == StatusCode::OK || response.status() == StatusCode::INTERNAL_SERVER_ERROR);
-        
+        assert!(
+            response.status() == StatusCode::OK
+                || response.status() == StatusCode::INTERNAL_SERVER_ERROR
+        );
+
         // If successful, verify headers
         if response.status() == StatusCode::OK {
             let headers = response.headers();
             assert_eq!(headers.get("content-type").unwrap(), "text/csv");
-            assert!(headers.get("content-disposition").unwrap().to_str().unwrap().contains("attachment"));
-            assert!(headers.get("content-disposition").unwrap().to_str().unwrap().contains("leadr_backup_"));
+            assert!(headers
+                .get("content-disposition")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains("attachment"));
+            assert!(headers
+                .get("content-disposition")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains("leadr_backup_"));
         }
     }
 

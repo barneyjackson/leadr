@@ -6,7 +6,7 @@
       {
         "name": "id",
         "ordinal": 0,
-        "type_info": "Int64"
+        "type_info": "Integer"
       },
       {
         "name": "game_hex_id",
@@ -53,7 +53,7 @@
       "Right": 7
     },
     "nullable": [
-      false,
+      true,
       false,
       false,
       false,

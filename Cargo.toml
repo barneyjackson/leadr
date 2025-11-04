@@ -11,7 +11,8 @@ tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 
 # Database
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+sqlx = { version = "0.8.1", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+async-trait = "0.1"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -43,3 +44,10 @@ reqwest = { version = "0.11", features = ["json"] }
 tempfile = "3.0"
 
 # Development tools (cargo-watch is installed globally via `cargo install cargo-watch`)
+
+[profile.release]
+opt-level = 3      # Maximum optimizations
+lto = "fat"        # Full link-time optimization for best size/performance
+codegen-units = 1  # Single codegen unit for better optimization
+strip = true       # Strip symbols to reduce binary size
+panic = 'abort'    # Abort on panic (smaller binary, appropriate for servers)

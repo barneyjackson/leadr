@@ -48,8 +48,7 @@ All requests require the `leadr-api-key` header with your configured API key.
 
 ### API Documentation
 
-- **📖 Online Documentation**: [https://leadr-docs.vercel.app/](https://leadr-docs.vercel.app/) (Vercel)
-- **🔧 Interactive Testing**: When running locally, visit `/swagger-ui` for interactive API documentation
+- **Online Documentation**: [https://leadr-docs.vercel.app/](https://leadr-docs.vercel.app/) (Vercel)
 
 The documentation is automatically generated from the code and updated on every push to main.
 
@@ -180,17 +179,13 @@ Import only happens if the database is empty.
 
 ## Cloud Deployment
 
-LEADR works with any cloud platform that supports Docker:
-
-- **Railway**: Deploy with one click using their Docker template
-- **Fly.io**: Use `fly launch` with the included Dockerfile
-- **Google Cloud Run**: Perfect for serverless deployments
-- **DigitalOcean App Platform**: Simple container hosting
-- **AWS ECS/Fargate**: For enterprise scale
+LEADR works with any cloud platform that supports Docker.
 
 Remember to:
 1. Set a strong `LEADR_API_KEY` environment variable
 2. Set up regular backups using the `/export` endpoint
+
+More docs coming soon.
 
 ---
 
@@ -258,22 +253,6 @@ cd docs && python3 -m http.server 8000
 # Then open: http://localhost:8000
 ```
 
-### Release Process
-
-This project uses automated semantic versioning:
-
-1. Go to Actions → Release and Publish
-2. Click "Run workflow"
-3. The workflow will:
-   - Analyze commits to determine version bump
-   - Create a GitHub release
-   - Build and push Docker images to GitHub Container Registry
-
-Commit message conventions:
-- `feat:` or `feature:` → Minor version bump
-- `BREAKING CHANGE:` or `breaking:` → Major version bump
-- All others → Patch version bump
-
 ### Contributing
 
 We follow test-driven development:
@@ -281,7 +260,8 @@ We follow test-driven development:
 1. Write tests first
 2. Implement features
 3. Ensure all tests pass
-4. Run `cargo fmt` and `cargo clippy`
+4. Run `./scripts/ci.sh`
+5. Make a PR
 
 ---
 

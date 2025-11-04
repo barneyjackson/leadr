@@ -1,7 +1,7 @@
 pub mod game;
-pub mod score;
 pub mod pagination;
+pub mod score;
 
 pub use game::*;
-pub use score::*;
 pub use pagination::*;
+pub use score::*;
