@@ -98,7 +98,7 @@ jobs:
         id: audit
         continue-on-error: true
         run: |
-          cargo audit --color never > audit-output.txt 2>&1 || true
+          cargo audit --quiet --color never > audit-output.txt 2>&1 || true
 
       - name: Check if vulnerabilities found
         id: has-vulns
@@ -135,8 +135,6 @@ jobs:
             ```
 
             </details>
-
-            💡 This is an automated check. Vulnerabilities won't block CI.
 
   coverage:
     name: Code Coverage

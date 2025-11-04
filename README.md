@@ -48,8 +48,7 @@ All requests require the `leadr-api-key` header with your configured API key.
 
 ### API Documentation
 
-- **📖 Online Documentation**: [https://leadr-docs.vercel.app/](https://leadr-docs.vercel.app/) (Vercel)
-- **🔧 Interactive Testing**: When running locally, visit `/swagger-ui` for interactive API documentation
+- **Online Documentation**: [https://leadr-docs.vercel.app/](https://leadr-docs.vercel.app/) (Vercel)
 
 The documentation is automatically generated from the code and updated on every push to main.
 
@@ -180,17 +179,13 @@ Import only happens if the database is empty.
 
 ## Cloud Deployment
 
-LEADR works with any cloud platform that supports Docker:
-
-- **Railway**: Deploy with one click using their Docker template
-- **Fly.io**: Use `fly launch` with the included Dockerfile
-- **Google Cloud Run**: Perfect for serverless deployments
-- **DigitalOcean App Platform**: Simple container hosting
-- **AWS ECS/Fargate**: For enterprise scale
+LEADR works with any cloud platform that supports Docker.
 
 Remember to:
 1. Set a strong `LEADR_API_KEY` environment variable
 2. Set up regular backups using the `/export` endpoint
+
+More docs coming soon.
 
 ---
 
