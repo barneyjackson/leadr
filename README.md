@@ -258,22 +258,6 @@ cd docs && python3 -m http.server 8000
 # Then open: http://localhost:8000
 ```
 
-### Release Process
-
-This project uses automated semantic versioning:
-
-1. Go to Actions → Release and Publish
-2. Click "Run workflow"
-3. The workflow will:
-   - Analyze commits to determine version bump
-   - Create a GitHub release
-   - Build and push Docker images to GitHub Container Registry
-
-Commit message conventions:
-- `feat:` or `feature:` → Minor version bump
-- `BREAKING CHANGE:` or `breaking:` → Major version bump
-- All others → Patch version bump
-
 ### Contributing
 
 We follow test-driven development:
@@ -281,7 +265,8 @@ We follow test-driven development:
 1. Write tests first
 2. Implement features
 3. Ensure all tests pass
-4. Run `cargo fmt` and `cargo clippy`
+4. Run `./scripts/ci.sh`
+5. Make a PR
 
 ---
 

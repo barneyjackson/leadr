@@ -86,20 +86,57 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
       pull-requests: write
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: Run security audit
-        uses: actions-rust-lang/audit@v1
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo audit and capture output
+        id: audit
         continue-on-error: true
+        run: |
+          cargo audit --color never > audit-output.txt 2>&1 || true
+
+      - name: Check if vulnerabilities found
+        id: has-vulns
+        if: github.event_name == 'pull_request'
+        run: |
+          # Only check for actual vulnerabilities, ignore warnings about unmaintained/yanked crates
+          if grep -qE "(error:|vulnerability:|Crate:.*ID:)" audit-output.txt; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Read audit output
+        id: audit-content
+        if: github.event_name == 'pull_request' && steps.has-vulns.outputs.found == 'true'
+        run: |
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          cat audit-output.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post audit results as PR comment
+        if: github.event_name == 'pull_request' && steps.has-vulns.outputs.found == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          # Don't fail CI on warnings or vulnerabilities without fixes
-          denyWarnings: false
-          # Create GitHub issues for findings (optional)
-          createIssues: false
+          header: security-audit
+          message: |
+            ## 🔒 Security Audit Results
+
+            <details>
+            <summary>Click to view cargo audit output</summary>
+
+            ```
+            ${{ steps.audit-content.outputs.content }}
+            ```
+
+            </details>
+
+            💡 This is an automated check. Vulnerabilities won't block CI.
 
   coverage:
     name: Code Coverage
