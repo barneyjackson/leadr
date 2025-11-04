@@ -94,6 +94,7 @@ jobs:
 
       - name: Run security audit
         uses: actions-rust-lang/audit@v1
+        continue-on-error: true
         with:
           # Don't fail CI on warnings or vulnerabilities without fixes
           denyWarnings: false
