@@ -8,9 +8,7 @@ use axum::{
 use crate::{
     db::{repository::GameRepository, DbPool},
     error::ApiError,
-    models::{
-        game::{CreateGame, UpdateGame},
-    },
+    models::game::{CreateGame, UpdateGame},
     utils::pagination::PaginationParams,
 };
 

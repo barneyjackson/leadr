@@ -31,9 +31,10 @@ pub async fn initialize_database() -> Result<DbPool, sqlx::Error> {
             tracing::info!("Creating new database file: {}", db_path);
             // Create empty file - SQLite will initialize it
             std::fs::File::create(db_path).map_err(|e| {
-                sqlx::Error::Io(std::io::Error::other(
-                    format!("Failed to create database file: {}", e),
-                ))
+                sqlx::Error::Io(std::io::Error::other(format!(
+                    "Failed to create database file: {}",
+                    e
+                )))
             })?;
         }
     }

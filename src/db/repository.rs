@@ -449,7 +449,7 @@ impl ScoreRepository {
         .await?;
 
         let score_row = ScoreRow {
-            id: row.id,
+            id: row.id.expect("id should never be null for new score"),
             game_hex_id: row.game_hex_id,
             score: row.score,
             score_val: row.score_val,
@@ -513,7 +513,7 @@ impl ScoreRepository {
         .await?;
 
         let score_row = ScoreRow {
-            id: row.id,
+            id: row.id.expect("id should never be null for new score"),
             game_hex_id: row.game_hex_id,
             score: row.score,
             score_val: row.score_val,
@@ -844,7 +844,7 @@ impl ScoreRepository {
         .ok_or(ApiError::NotFound)?;
 
         let score_row = ScoreRow {
-            id: row.id.unwrap(),
+            id: row.id,
             game_hex_id: row.game_hex_id,
             score: row.score,
             score_val: row.score_val,
@@ -909,7 +909,7 @@ impl ScoreRepository {
         .ok_or(ApiError::NotFound)?;
 
         let score_row = ScoreRow {
-            id: row.id.unwrap(),
+            id: row.id,
             game_hex_id: row.game_hex_id,
             score: row.score,
             score_val: row.score_val,

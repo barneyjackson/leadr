@@ -11,9 +11,7 @@ use crate::{
         DbPool,
     },
     error::ApiError,
-    models::{
-        score::{CreateScore, Score, UpdateScore},
-    },
+    models::score::{CreateScore, Score, UpdateScore},
     utils::pagination::ScoreQueryParams,
 };
 
