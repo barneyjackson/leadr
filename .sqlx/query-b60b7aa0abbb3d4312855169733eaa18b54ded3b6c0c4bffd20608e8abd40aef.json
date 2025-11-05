@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE game SET deleted_at = $1, updated_at = $1 WHERE hex_id = $2 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b60b7aa0abbb3d4312855169733eaa18b54ded3b6c0c4bffd20608e8abd40aef"
+}

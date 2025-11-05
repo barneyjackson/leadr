@@ -1,21 +1,11 @@
+mod common;
+
 use axum::{
     body::Body,
     http::{Request, StatusCode},
-    Router,
 };
-use leadr_api::{create_app, db};
 use serde_json::json;
 use tower::util::ServiceExt;
-
-// Helper function to create test app with in-memory database
-async fn create_test_app() -> Router {
-    // Set the API key environment variable before creating the app
-    std::env::set_var("LEADR_API_KEY", "test_api_key_123");
-
-    let pool = db::create_pool("sqlite::memory:").await.unwrap();
-    db::run_migrations(&pool).await.unwrap();
-    create_app(pool)
-}
 
 // Helper function to create request with API key
 fn request_with_api_key(method: &str, uri: &str, body: Option<&str>) -> Request<Body> {
@@ -48,9 +38,10 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_health_endpoint_no_auth_required() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(
                 Request::builder()
                     .uri("/health")
@@ -65,14 +56,15 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_game_success() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let game_data = json!({
             "name": "Test Game",
             "description": "A test game for testing"
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/games",
@@ -86,13 +78,14 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_game_missing_name() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let game_data = json!({
             "description": "Missing name field"
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/games",
@@ -106,14 +99,15 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_game_without_auth() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let _game_data = json!({
             "name": "Test Game",
             "description": "Should fail without auth"
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_without_api_key("POST", "/games"))
             .await
             .unwrap();
@@ -124,7 +118,7 @@ mod game_endpoint_tests {
     #[tokio::test]
     async fn test_create_game_wrong_api_key() {
         std::env::set_var("LEADR_API_KEY", "correct_key");
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let request = Request::builder()
             .method("POST")
@@ -134,13 +128,13 @@ mod game_endpoint_tests {
             .body(Body::from(json!({"name": "Test Game"}).to_string()))
             .unwrap();
 
-        let response = app.oneshot(request).await.unwrap();
+        let response = test_app.router().oneshot(request).await.unwrap();
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
     }
 
     #[tokio::test]
     async fn test_get_game_success() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // First create a game
         let game_data = json!({
@@ -148,8 +142,8 @@ mod game_endpoint_tests {
             "description": "A test game"
         });
 
-        let create_response = app
-            .clone()
+        let create_response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/games",
@@ -168,7 +162,8 @@ mod game_endpoint_tests {
         let hex_id = created_game["hex_id"].as_str().unwrap();
 
         // Now try to retrieve it
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 &format!("/games/{}", hex_id),
@@ -189,9 +184,10 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_game_invalid_hex_id() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/games/invalid_hex", None))
             .await
             .unwrap();
@@ -205,9 +201,10 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_list_games_success() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/games", None))
             .await
             .unwrap();
@@ -217,9 +214,10 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_list_games_without_auth() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_without_api_key("GET", "/games"))
             .await
             .unwrap();
@@ -229,7 +227,7 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_game_success() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // First create a game
         let game_data = json!({
@@ -237,8 +235,8 @@ mod game_endpoint_tests {
             "description": "Original description"
         });
 
-        let create_response = app
-            .clone()
+        let create_response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/games",
@@ -261,7 +259,8 @@ mod game_endpoint_tests {
             "name": "Updated Game Name"
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "PUT",
                 &format!("/games/{}", hex_id),
@@ -275,7 +274,7 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_game_empty_body() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // First create a game
         let game_data = json!({
@@ -283,8 +282,8 @@ mod game_endpoint_tests {
             "description": "Test description"
         });
 
-        let create_response = app
-            .clone()
+        let create_response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/games",
@@ -303,7 +302,8 @@ mod game_endpoint_tests {
         let hex_id = created_game["hex_id"].as_str().unwrap();
 
         // Now try empty update
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "PUT",
                 &format!("/games/{}", hex_id),
@@ -318,7 +318,7 @@ mod game_endpoint_tests {
 
     #[tokio::test]
     async fn test_delete_game_soft_delete() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // First create a game
         let game_data = json!({
@@ -326,8 +326,8 @@ mod game_endpoint_tests {
             "description": "Will be deleted"
         });
 
-        let create_response = app
-            .clone()
+        let create_response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/games",
@@ -346,7 +346,8 @@ mod game_endpoint_tests {
         let hex_id = created_game["hex_id"].as_str().unwrap();
 
         // Now delete it
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "DELETE",
                 &format!("/games/{}", hex_id),
@@ -365,7 +366,7 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_success() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let score_data = json!({
             "game_hex_id": "abc123",
@@ -376,7 +377,8 @@ mod score_endpoint_tests {
             "extra": {"level": 5, "time": 120.5}
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/scores",
@@ -393,7 +395,7 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_minimal_data() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let score_data = json!({
             "game_hex_id": "abc123",
@@ -402,7 +404,8 @@ mod score_endpoint_tests {
             "user_id": "id123"
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/scores",
@@ -418,7 +421,7 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_missing_required_fields() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let score_data = json!({
             "game_hex_id": "abc123",
@@ -426,7 +429,8 @@ mod score_endpoint_tests {
             // Missing user_name and user_id
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/scores",
@@ -440,7 +444,7 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_invalid_user_name() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let score_data = json!({
             "game_hex_id": "abc123",
@@ -449,7 +453,8 @@ mod score_endpoint_tests {
             "user_id": "id123"
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/scores",
@@ -463,7 +468,7 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_invalid_user_id() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let score_data = json!({
             "game_hex_id": "abc123",
@@ -472,7 +477,8 @@ mod score_endpoint_tests {
             "user_id": ""  // Empty ID should be invalid
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/scores",
@@ -486,7 +492,7 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_create_score_without_auth() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let score_data = json!({
             "score": "500",
@@ -494,7 +500,8 @@ mod score_endpoint_tests {
             "user_id": "id123"
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_without_api_key("POST", "/scores"))
             .await
             .unwrap();
@@ -504,9 +511,10 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_game_scores_success() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123",
@@ -521,9 +529,10 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_global_scores_without_game_filter() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/scores", None))
             .await
             .unwrap();
@@ -534,9 +543,10 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_game_scores_with_query_params() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&limit=10",
@@ -550,9 +560,10 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_game_scores_without_auth() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_without_api_key("GET", "/scores?game_hex_id=abc123"))
             .await
             .unwrap();
@@ -562,14 +573,15 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_score_success() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let update_data = json!({
             "score": "1500",
             "user_name": "UpdatedPlayer"
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "PUT",
                 "/scores/123",
@@ -584,14 +596,15 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_score_partial_update() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let update_data = json!({
             "score": "2000"
             // Only updating score field
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "PUT",
                 "/scores/123",
@@ -605,13 +618,14 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_score_invalid_data() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let update_data = json!({
             "user_name": ""  // Invalid empty name
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "PUT",
                 "/scores/123",
@@ -625,13 +639,14 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_update_score_without_auth() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let update_data = json!({
             "score": 1500
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_without_api_key("PUT", "/scores/123"))
             .await
             .unwrap();
@@ -641,9 +656,10 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_get_single_score() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/scores/123", None))
             .await
             .unwrap();
@@ -654,9 +670,10 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_delete_score_soft_delete() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("DELETE", "/scores/123", None))
             .await
             .unwrap();
@@ -670,7 +687,7 @@ mod score_endpoint_tests {
 
     #[tokio::test]
     async fn test_complex_extra_data() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         let complex_extra = json!({
             "achievements": ["first_try", "speed_run"],
@@ -693,7 +710,8 @@ mod score_endpoint_tests {
             "extra": complex_extra
         });
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "POST",
                 "/scores",
@@ -714,9 +732,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_list_games_with_pagination() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/games?limit=10", None))
             .await
             .unwrap();
@@ -726,9 +745,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_list_games_with_cursor() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/games?cursor=eyJoZXhfaWQiOiJhYmMxMjMiLCJjcmVhdGVkX2F0IjoiMjAyNC0wMS0wMVQwMDowMDowMFoifQ", None))
             .await
             .unwrap();
@@ -738,9 +758,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_list_games_with_invalid_cursor() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/games?cursor=invalid_cursor",
@@ -754,10 +775,11 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_list_games_with_oversized_limit() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // Should cap at max limit
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/games?limit=200", None))
             .await
             .unwrap();
@@ -767,10 +789,11 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_default_sorting() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // Default should be sorted by score descending
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123",
@@ -784,9 +807,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_sort_by_date_asc() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&sort_by=date&order=asc",
@@ -800,9 +824,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_sort_by_user_name_desc() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&sort_by=user_name&order=desc",
@@ -816,9 +841,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_sort_by_score_desc() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&sort_by=score&order=desc",
@@ -832,9 +858,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_with_pagination() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&limit=5&sort_by=score",
@@ -848,9 +875,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_with_cursor_and_sorting() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET", 
                 "/scores?game_hex_id=abc123&cursor=eyJpZCI6MTIzLCJzb3J0X3ZhbHVlIjoiMTAwMC41In0&sort_by=score&order=desc&limit=10",
@@ -864,9 +892,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_invalid_sort_field() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&sort_by=invalid_field",
@@ -880,9 +909,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_invalid_sort_order() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&order=invalid_order",
@@ -896,9 +926,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_get_scores_invalid_cursor() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&cursor=invalid_cursor",
@@ -912,10 +943,11 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_scores_pagination_consistency() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // Test that the same sort parameters work consistently with pagination
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&sort_by=date&order=asc&limit=25",
@@ -930,10 +962,11 @@ mod pagination_and_sorting_tests {
     #[tokio::test]
     async fn test_environment_page_size_override() {
         std::env::set_var("LEADR_PAGE_SIZE", "10");
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // Should use environment variable for default page size
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/games", None))
             .await
             .unwrap();
@@ -946,9 +979,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_scores_response_structure() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key(
                 "GET",
                 "/scores?game_hex_id=abc123&limit=1",
@@ -966,12 +1000,13 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_complex_query_parameters() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
         // Test combination of all query parameters
         let complex_query = "/scores?game_hex_id=abc123&sort_by=score&order=desc&limit=15&cursor=eyJpZCI6NDU2LCJzb3J0X3ZhbHVlIjoiMjAwMC4wIn0";
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", complex_query, None))
             .await
             .unwrap();
@@ -981,9 +1016,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_export_csv_backup() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_with_api_key("GET", "/export", None))
             .await
             .unwrap();
@@ -1015,9 +1051,10 @@ mod pagination_and_sorting_tests {
 
     #[tokio::test]
     async fn test_export_without_auth() {
-        let app = create_test_app().await;
+        let test_app = common::TestApp::new().await;
 
-        let response = app
+        let response = test_app
+            .router()
             .oneshot(request_without_api_key("GET", "/export"))
             .await
             .unwrap();

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE score SET deleted_at = $1 WHERE id = $2 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e0d44141741ae241a8dabd2bb32f26c39c737f54a1208a3bffb7e9a3fac5bbcf"
+}

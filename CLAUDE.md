@@ -145,3 +145,4 @@ docker run -p 3000:3000 -e LEADR_API_KEY=test-key leadr-api
 
 - `.github/workflows/release.yml` - Automated versioning and Docker image publishing
 - `.github/workflows/docs.yml` - Automatic documentation deployment to Vercel
+- Always run `cargo check` after completing your changes to check if code is valid and compiles
