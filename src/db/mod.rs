@@ -1,43 +1,24 @@
-use sqlx::{sqlite::SqlitePool, Pool, Sqlite};
+use sqlx::{Pool, Postgres};
 
-pub mod provider;
 pub mod repository;
 pub mod seed;
 
-pub type DbPool = Pool<Sqlite>;
+pub type DbPool = Pool<Postgres>;
 
 /// Initializes the database with proper lifecycle management.
 ///
 /// This function handles the complete database setup sequence:
-/// 1. Creates database file if it doesn't exist
-/// 2. Establishes connection pool
-/// 3. Runs migrations
-/// 4. Performs seeding if configured
+/// 1. Establishes connection pool
+/// 2. Runs migrations
+/// 3. Performs seeding if configured
 ///
 /// # Errors
 /// Returns `sqlx::Error` if any step fails.
 pub async fn initialize_database() -> Result<DbPool, sqlx::Error> {
-    let database_url =
-        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:./leadr.db".to_string());
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgresql://localhost:5432/leadr".to_string());
 
     tracing::info!("Initializing database: {}", database_url);
-
-    // Create database file if it doesn't exist (SQLite-specific)
-    if database_url.starts_with("sqlite:") {
-        let db_path = database_url
-            .strip_prefix("sqlite:")
-            .unwrap_or(&database_url);
-        if !std::path::Path::new(db_path).exists() {
-            tracing::info!("Creating new database file: {}", db_path);
-            // Create empty file - SQLite will initialize it
-            std::fs::File::create(db_path).map_err(|e| {
-                sqlx::Error::Io(std::io::Error::other(format!(
-                    "Failed to create database file: {}",
-                    e
-                )))
-            })?;
-        }
-    }
 
     // Create connection pool
     let pool = create_pool(&database_url).await?;
@@ -60,7 +41,7 @@ pub async fn initialize_database() -> Result<DbPool, sqlx::Error> {
 /// # Errors
 /// Returns `sqlx::Error` if the database connection fails.
 pub async fn create_pool(database_url: &str) -> Result<DbPool, sqlx::Error> {
-    SqlitePool::connect(database_url).await
+    sqlx::PgPool::connect(database_url).await
 }
 
 /// Runs database migrations.
@@ -73,6 +54,3 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), sqlx::Error> {
         .await
         .map_err(sqlx::Error::from)
 }
-
-// Re-export provider types for convenience
-pub use provider::{DatabaseProvider, SqliteProvider};

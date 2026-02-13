@@ -1,6 +1,7 @@
 use chrono::Utc;
-use sqlx::{Row, SqlitePool};
+use sqlx::Row;
 
+use crate::db::DbPool;
 use crate::error::{ApiError, Result};
 use crate::models::{
     CreateGame, CreateScore, Game, GameRow, Score, ScoreRow, UpdateGame, UpdateScore,
@@ -25,25 +26,24 @@ impl GameRepository {
     ///
     /// # Panics
     /// Does not panic under normal operation.
-    pub async fn create(pool: &SqlitePool, create_data: CreateGame) -> Result<Game> {
+    pub async fn create(pool: &DbPool, create_data: CreateGame) -> Result<Game> {
         // Validate inputs
         Game::validate_name(&create_data.name)?;
 
         let hex_id = Game::generate_hex_id();
         let now = Utc::now();
-        let now_naive = now.naive_utc();
 
         let row = sqlx::query!(
             r#"
             INSERT INTO game (hex_id, name, description, created_at, updated_at)
-            VALUES (?1, ?2, ?3, ?4, ?5)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING id, hex_id, name, description, created_at, updated_at, deleted_at
             "#,
             hex_id,
             create_data.name,
             create_data.description,
-            now_naive,
-            now_naive
+            now,
+            now
         )
         .fetch_one(pool)
         .await?;
@@ -68,7 +68,7 @@ impl GameRepository {
     /// Returns `ApiError::ValidationError` if the game name or hex_id is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     pub async fn create_with_hex_id(
-        pool: &SqlitePool,
+        pool: &DbPool,
         create_data: CreateGame,
         hex_id: String,
         created_at: chrono::DateTime<Utc>,
@@ -78,20 +78,17 @@ impl GameRepository {
         let normalized_hex_id =
             Game::normalize_and_validate_hex_id(&hex_id).map_err(ApiError::InvalidParameter)?;
 
-        let created_at_naive = created_at.naive_utc();
-        let updated_at_naive = created_at.naive_utc();
-
         let row = sqlx::query!(
             r#"
             INSERT INTO game (hex_id, name, description, created_at, updated_at)
-            VALUES (?1, ?2, ?3, ?4, ?5)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING id, hex_id, name, description, created_at, updated_at, deleted_at
             "#,
             normalized_hex_id,
             create_data.name,
             create_data.description,
-            created_at_naive,
-            updated_at_naive
+            created_at,
+            created_at
         )
         .fetch_one(pool)
         .await?;
@@ -119,14 +116,14 @@ impl GameRepository {
     ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
-    pub async fn get_by_hex_id(pool: &SqlitePool, hex_id: &str) -> Result<Game> {
+    pub async fn get_by_hex_id(pool: &DbPool, hex_id: &str) -> Result<Game> {
         Game::validate_hex_id(hex_id).map_err(ApiError::InvalidParameter)?;
 
         let row = sqlx::query!(
             r#"
             SELECT id, hex_id, name, description, created_at, updated_at, deleted_at
-            FROM game 
-            WHERE hex_id = ?1 AND deleted_at IS NULL
+            FROM game
+            WHERE hex_id = $1 AND deleted_at IS NULL
             "#,
             hex_id
         )
@@ -135,7 +132,7 @@ impl GameRepository {
         .ok_or(ApiError::NotFound)?;
 
         let game_row = GameRow {
-            id: row.id.unwrap(),
+            id: row.id,
             hex_id: row.hex_id,
             name: row.name,
             description: row.description,
@@ -156,12 +153,12 @@ impl GameRepository {
     ///
     /// # Panics
     /// Does not panic under normal operation.
-    pub async fn get_by_id(pool: &SqlitePool, id: i64) -> Result<Game> {
+    pub async fn get_by_id(pool: &DbPool, id: i64) -> Result<Game> {
         let row = sqlx::query!(
             r#"
             SELECT id, hex_id, name, description, created_at, updated_at, deleted_at
-            FROM game 
-            WHERE id = ?1 AND deleted_at IS NULL
+            FROM game
+            WHERE id = $1 AND deleted_at IS NULL
             "#,
             id
         )
@@ -192,7 +189,7 @@ impl GameRepository {
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
     pub async fn list(
-        pool: &SqlitePool,
+        pool: &DbPool,
         pagination: PaginationParams,
     ) -> Result<PaginatedResponse<Game>> {
         let limit = pagination.get_limit();
@@ -202,18 +199,17 @@ impl GameRepository {
             let cursor = decode_game_cursor(cursor_str)
                 .map_err(|e| ApiError::ValidationError(format!("Invalid cursor: {e}")))?;
 
-            let cursor_datetime = chrono::DateTime::parse_from_rfc3339(&cursor.created_at)
+            let cursor_created_at = chrono::DateTime::parse_from_rfc3339(&cursor.created_at)
                 .map_err(|e| ApiError::ValidationError(format!("Invalid cursor date: {e}")))?
                 .with_timezone(&chrono::Utc);
-            let cursor_created_at = cursor_datetime.naive_utc();
             let game_rows = sqlx::query!(
                 r#"
                 SELECT id, hex_id, name, description, created_at, updated_at, deleted_at
-                FROM game 
-                WHERE deleted_at IS NULL 
-                AND (created_at, hex_id) < (?1, ?2)
+                FROM game
+                WHERE deleted_at IS NULL
+                AND (created_at, hex_id) < ($1, $2)
                 ORDER BY created_at DESC, hex_id DESC
-                LIMIT ?3
+                LIMIT $3
                 "#,
                 cursor_created_at,
                 cursor.hex_id,
@@ -226,7 +222,7 @@ impl GameRepository {
                 .into_iter()
                 .map(|row| {
                     Game::from(GameRow {
-                        id: row.id.unwrap(),
+                        id: row.id,
                         hex_id: row.hex_id,
                         name: row.name,
                         description: row.description,
@@ -240,10 +236,10 @@ impl GameRepository {
             let game_rows = sqlx::query!(
                 r#"
                 SELECT id, hex_id, name, description, created_at, updated_at, deleted_at
-                FROM game 
+                FROM game
                 WHERE deleted_at IS NULL
                 ORDER BY created_at DESC, hex_id DESC
-                LIMIT ?1
+                LIMIT $1
                 "#,
                 fetch_limit
             )
@@ -254,7 +250,7 @@ impl GameRepository {
                 .into_iter()
                 .map(|row| {
                     Game::from(GameRow {
-                        id: row.id.unwrap(),
+                        id: row.id,
                         hex_id: row.hex_id,
                         name: row.name,
                         description: row.description,
@@ -284,7 +280,7 @@ impl GameRepository {
     ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
-    pub async fn update(pool: &SqlitePool, hex_id: &str, update_data: UpdateGame) -> Result<Game> {
+    pub async fn update(pool: &DbPool, hex_id: &str, update_data: UpdateGame) -> Result<Game> {
         Game::validate_hex_id(hex_id).map_err(ApiError::InvalidParameter)?;
 
         if let Some(ref name) = update_data.name {
@@ -292,20 +288,19 @@ impl GameRepository {
         }
 
         let now = Utc::now();
-        let now_naive = now.naive_utc();
 
         let row = sqlx::query!(
             r#"
-            UPDATE game 
-            SET name = COALESCE(?1, name),
-                description = COALESCE(?2, description),
-                updated_at = ?3
-            WHERE hex_id = ?4 AND deleted_at IS NULL
+            UPDATE game
+            SET name = COALESCE($1, name),
+                description = COALESCE($2, description),
+                updated_at = $3
+            WHERE hex_id = $4 AND deleted_at IS NULL
             RETURNING id, hex_id, name, description, created_at, updated_at, deleted_at
             "#,
             update_data.name,
             update_data.description,
-            now_naive,
+            now,
             hex_id
         )
         .fetch_optional(pool)
@@ -313,7 +308,7 @@ impl GameRepository {
         .ok_or(ApiError::NotFound)?;
 
         let game_row = GameRow {
-            id: row.id.unwrap(),
+            id: row.id,
             hex_id: row.hex_id,
             name: row.name,
             description: row.description,
@@ -335,14 +330,13 @@ impl GameRepository {
     ///
     /// # Panics
     /// Does not panic under normal operation.
-    pub async fn soft_delete(pool: &SqlitePool, hex_id: &str) -> Result<()> {
+    pub async fn soft_delete(pool: &DbPool, hex_id: &str) -> Result<()> {
         Game::validate_hex_id(hex_id).map_err(ApiError::InvalidParameter)?;
 
         let now = Utc::now();
-        let now_naive = now.naive_utc();
         let rows_affected = sqlx::query!(
-            "UPDATE game SET deleted_at = ?1, updated_at = ?1 WHERE hex_id = ?2 AND deleted_at IS NULL",
-            now_naive,
+            "UPDATE game SET deleted_at = $1, updated_at = $1 WHERE hex_id = $2 AND deleted_at IS NULL",
+            now,
             hex_id
         )
         .execute(pool)
@@ -365,19 +359,18 @@ impl GameRepository {
     ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
-    pub async fn restore(pool: &SqlitePool, hex_id: &str) -> Result<Game> {
+    pub async fn restore(pool: &DbPool, hex_id: &str) -> Result<Game> {
         Game::validate_hex_id(hex_id).map_err(ApiError::InvalidParameter)?;
 
         let now = Utc::now();
-        let now_naive = now.naive_utc();
         let row = sqlx::query!(
             r#"
-            UPDATE game 
-            SET deleted_at = NULL, updated_at = ?1
-            WHERE hex_id = ?2 AND deleted_at IS NOT NULL
+            UPDATE game
+            SET deleted_at = NULL, updated_at = $1
+            WHERE hex_id = $2 AND deleted_at IS NOT NULL
             RETURNING id, hex_id, name, description, created_at, updated_at, deleted_at
             "#,
-            now_naive,
+            now,
             hex_id
         )
         .fetch_optional(pool)
@@ -385,7 +378,7 @@ impl GameRepository {
         .ok_or(ApiError::NotFound)?;
 
         let game_row = GameRow {
-            id: row.id.unwrap(),
+            id: row.id,
             hex_id: row.hex_id,
             name: row.name,
             description: row.description,
@@ -408,7 +401,7 @@ impl ScoreRepository {
     ///
     /// # Panics
     /// Panics if `serde_json::to_string` fails on valid JSON data, which should never happen.
-    pub async fn create(pool: &SqlitePool, create_data: CreateScore) -> Result<Score> {
+    pub async fn create(pool: &DbPool, create_data: CreateScore) -> Result<Score> {
         // Validate inputs
         Score::validate_user_name(&create_data.user_name)?;
         Score::validate_user_id(&create_data.user_id)?;
@@ -426,7 +419,6 @@ impl ScoreRepository {
             .unwrap_or_else(|| create_data.score.parse::<f64>().unwrap_or(0.0));
 
         let now = Utc::now();
-        let now_naive = now.naive_utc();
         let extra_json = create_data
             .extra
             .map(|v| serde_json::to_string(&v).unwrap());
@@ -434,7 +426,7 @@ impl ScoreRepository {
         let row = sqlx::query!(
             r#"
             INSERT INTO score (game_hex_id, score, score_val, user_name, user_id, extra, submitted_at)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
             "#,
             create_data.game_hex_id,
@@ -443,13 +435,13 @@ impl ScoreRepository {
             create_data.user_name,
             create_data.user_id,
             extra_json,
-            now_naive
+            now
         )
         .fetch_one(pool)
         .await?;
 
         let score_row = ScoreRow {
-            id: row.id.expect("id should never be null for new score"),
+            id: row.id,
             game_hex_id: row.game_hex_id,
             score: row.score,
             score_val: row.score_val,
@@ -470,7 +462,7 @@ impl ScoreRepository {
     /// Returns `ApiError::ValidationError` if user name, user ID, or JSON data is invalid.
     /// Returns `ApiError::DatabaseError` if the database operation fails.
     pub async fn create_with_timestamp(
-        pool: &SqlitePool,
+        pool: &DbPool,
         create_data: CreateScore,
         submitted_at: chrono::DateTime<Utc>,
     ) -> Result<Score> {
@@ -490,7 +482,6 @@ impl ScoreRepository {
             .score_val
             .unwrap_or_else(|| create_data.score.parse::<f64>().unwrap_or(0.0));
 
-        let submitted_at_naive = submitted_at.naive_utc();
         let extra_json = create_data
             .extra
             .map(|v| serde_json::to_string(&v).unwrap());
@@ -498,7 +489,7 @@ impl ScoreRepository {
         let row = sqlx::query!(
             r#"
             INSERT INTO score (game_hex_id, score, score_val, user_name, user_id, extra, submitted_at)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
             "#,
             create_data.game_hex_id,
@@ -507,13 +498,13 @@ impl ScoreRepository {
             create_data.user_name,
             create_data.user_id,
             extra_json,
-            submitted_at_naive
+            submitted_at
         )
         .fetch_one(pool)
         .await?;
 
         let score_row = ScoreRow {
-            id: row.id.expect("id should never be null for new score"),
+            id: row.id,
             game_hex_id: row.game_hex_id,
             score: row.score,
             score_val: row.score_val,
@@ -536,12 +527,12 @@ impl ScoreRepository {
     ///
     /// # Panics
     /// Does not panic under normal operation.
-    pub async fn get_by_id(pool: &SqlitePool, id: i64) -> Result<Score> {
+    pub async fn get_by_id(pool: &DbPool, id: i64) -> Result<Score> {
         let row = sqlx::query!(
             r#"
             SELECT id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
-            FROM score 
-            WHERE id = ?1 AND deleted_at IS NULL
+            FROM score
+            WHERE id = $1 AND deleted_at IS NULL
             "#,
             id
         )
@@ -574,7 +565,7 @@ impl ScoreRepository {
     /// # Panics
     /// Does not panic under normal operation.
     pub async fn list_by_game(
-        pool: &SqlitePool,
+        pool: &DbPool,
         game_hex_id: &str,
         pagination: PaginationParams,
         sort_params: ScoreSortParams,
@@ -599,12 +590,12 @@ impl ScoreRepository {
             let query = format!(
                 r"
                 SELECT id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
-                FROM score 
-                WHERE deleted_at IS NULL 
-                AND game_hex_id = ?1
-                AND ({sort_field} {comparison_op} ?2 OR ({sort_field} = ?2 AND id > ?3))
+                FROM score
+                WHERE deleted_at IS NULL
+                AND game_hex_id = $1
+                AND ({sort_field} {comparison_op} $2 OR ({sort_field} = $2 AND id > $3))
                 ORDER BY {order_clause}, id
-                LIMIT ?4
+                LIMIT $4
                 "
             );
 
@@ -637,10 +628,10 @@ impl ScoreRepository {
             let query = format!(
                 r"
                 SELECT id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
-                FROM score 
-                WHERE deleted_at IS NULL AND game_hex_id = ?1
+                FROM score
+                WHERE deleted_at IS NULL AND game_hex_id = $1
                 ORDER BY {order_clause}, id
-                LIMIT ?2
+                LIMIT $2
                 "
             );
 
@@ -687,7 +678,7 @@ impl ScoreRepository {
     /// # Panics
     /// Does not panic under normal operation.
     pub async fn list_all(
-        pool: &SqlitePool,
+        pool: &DbPool,
         pagination: PaginationParams,
         sort_params: ScoreSortParams,
     ) -> Result<PaginatedResponse<Score>> {
@@ -709,11 +700,11 @@ impl ScoreRepository {
             let query = format!(
                 r"
                 SELECT id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
-                FROM score 
-                WHERE deleted_at IS NULL 
-                AND ({sort_field} {comparison_op} ?1 OR ({sort_field} = ?1 AND id > ?2))
+                FROM score
+                WHERE deleted_at IS NULL
+                AND ({sort_field} {comparison_op} $1 OR ({sort_field} = $1 AND id > $2))
                 ORDER BY {order_clause}, id
-                LIMIT ?3
+                LIMIT $3
                 "
             );
 
@@ -745,10 +736,10 @@ impl ScoreRepository {
             let query = format!(
                 r"
                 SELECT id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
-                FROM score 
+                FROM score
                 WHERE deleted_at IS NULL
                 ORDER BY {order_clause}, id
-                LIMIT ?1
+                LIMIT $1
                 "
             );
 
@@ -793,7 +784,7 @@ impl ScoreRepository {
     ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
-    pub async fn update(pool: &SqlitePool, id: i64, update_data: UpdateScore) -> Result<Score> {
+    pub async fn update(pool: &DbPool, id: i64, update_data: UpdateScore) -> Result<Score> {
         if let Some(ref user_name) = update_data.user_name {
             Score::validate_user_name(user_name)?;
         }
@@ -823,13 +814,13 @@ impl ScoreRepository {
 
         let row = sqlx::query!(
             r#"
-            UPDATE score 
-            SET score = COALESCE(?1, score),
-                score_val = COALESCE(?2, score_val),
-                user_name = COALESCE(?3, user_name),
-                user_id = COALESCE(?4, user_id),
-                extra = COALESCE(?5, extra)
-            WHERE id = ?6 AND deleted_at IS NULL
+            UPDATE score
+            SET score = COALESCE($1, score),
+                score_val = COALESCE($2, score_val),
+                user_name = COALESCE($3, user_name),
+                user_id = COALESCE($4, user_id),
+                extra = COALESCE($5, extra)
+            WHERE id = $6 AND deleted_at IS NULL
             RETURNING id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
             "#,
             update_data.score,
@@ -867,12 +858,11 @@ impl ScoreRepository {
     ///
     /// # Panics
     /// Does not panic under normal operation.
-    pub async fn soft_delete(pool: &SqlitePool, id: i64) -> Result<()> {
+    pub async fn soft_delete(pool: &DbPool, id: i64) -> Result<()> {
         let now = Utc::now();
-        let now_naive = now.naive_utc();
         let rows_affected = sqlx::query!(
-            "UPDATE score SET deleted_at = ?1 WHERE id = ?2 AND deleted_at IS NULL",
-            now_naive,
+            "UPDATE score SET deleted_at = $1 WHERE id = $2 AND deleted_at IS NULL",
+            now,
             id
         )
         .execute(pool)
@@ -894,12 +884,12 @@ impl ScoreRepository {
     ///
     /// # Panics
     /// Panics if the database returns a NULL id, which should never happen.
-    pub async fn restore(pool: &SqlitePool, id: i64) -> Result<Score> {
+    pub async fn restore(pool: &DbPool, id: i64) -> Result<Score> {
         let row = sqlx::query!(
             r#"
-            UPDATE score 
+            UPDATE score
             SET deleted_at = NULL
-            WHERE id = ?1 AND deleted_at IS NOT NULL
+            WHERE id = $1 AND deleted_at IS NOT NULL
             RETURNING id, game_hex_id, score, score_val, user_name, user_id, extra, submitted_at, deleted_at
             "#,
             id

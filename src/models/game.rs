@@ -13,16 +13,16 @@ pub struct Game {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
-// Database representation with proper SQLite types
+// Database representation with proper PostgreSQL types
 #[derive(Debug, sqlx::FromRow)]
 pub struct GameRow {
     pub id: i64,
     pub hex_id: String,
     pub name: String,
     pub description: Option<String>,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
-    pub deleted_at: Option<chrono::NaiveDateTime>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 impl From<GameRow> for Game {
@@ -32,11 +32,9 @@ impl From<GameRow> for Game {
             hex_id: row.hex_id,
             name: row.name,
             description: row.description,
-            created_at: DateTime::from_naive_utc_and_offset(row.created_at, Utc),
-            updated_at: DateTime::from_naive_utc_and_offset(row.updated_at, Utc),
-            deleted_at: row
-                .deleted_at
-                .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            deleted_at: row.deleted_at,
         }
     }
 }

@@ -16,7 +16,7 @@ pub struct Score {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
-// Database representation with proper SQLite types
+// Database representation with proper PostgreSQL types
 #[derive(Debug, sqlx::FromRow)]
 pub struct ScoreRow {
     pub id: i64,
@@ -26,8 +26,8 @@ pub struct ScoreRow {
     pub user_name: String,
     pub user_id: String,
     pub extra: Option<String>, // JSON stored as TEXT
-    pub submitted_at: chrono::NaiveDateTime,
-    pub deleted_at: Option<chrono::NaiveDateTime>,
+    pub submitted_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 impl From<ScoreRow> for Score {
@@ -40,10 +40,8 @@ impl From<ScoreRow> for Score {
             user_name: row.user_name,
             user_id: row.user_id,
             extra: row.extra.and_then(|s| serde_json::from_str(&s).ok()),
-            submitted_at: DateTime::from_naive_utc_and_offset(row.submitted_at, Utc),
-            deleted_at: row
-                .deleted_at
-                .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
+            submitted_at: row.submitted_at,
+            deleted_at: row.deleted_at,
         }
     }
 }
